@@ -3,6 +3,7 @@ import { RoundedButton } from "@/components/RoundedButton";
 import { invoke } from "@tauri-apps/api/core";
 import Image from "next/image";
 import { useCallback, useState } from "react";
+import Link from "next/link";
 
 export default function Home() {
   const [greeted, setGreeted] = useState<string | null>(null);
@@ -39,13 +40,24 @@ export default function Home() {
         </ol>
 
         <div className="flex flex-col gap-2 items-start">
-          <RoundedButton
-            onClick={greet}
-            title="Call &quot;greet&quot; from Rust"
-          />
+          <RoundedButton onClick={greet} title='Call "greet" from Rust' />
           <p className="break-words w-md">
             {greeted ?? "Click the button to call the Rust function"}
           </p>
+        </div>
+
+        <div className="mt-4 p-4 border border-gray-200 rounded-md bg-gray-50">
+          <h2 className="text-xl font-bold mb-2">应用功能</h2>
+          <ul className="list-inside list-disc">
+            <li className="mb-2">
+              <Link href="/lyrics" className="text-blue-500 hover:underline">
+                歌词搜索与滚动
+              </Link>
+              <span className="ml-2 text-sm text-gray-500">
+                - 根据歌曲名称获取歌词并实现歌词滚动
+              </span>
+            </li>
+          </ul>
         </div>
       </main>
       <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
