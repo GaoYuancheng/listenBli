@@ -1,4 +1,5 @@
 "use client";
+import { invoke } from "@tauri-apps/api/core";
 import { useState, useEffect, useRef } from "react";
 
 interface LyricLine {
@@ -94,9 +95,9 @@ export default function ExternalLyricsPage() {
   };
 
   // 关闭窗口
-  const closeWindow = () => {
+  const closeWindow = async () => {
     // 在浏览器环境中使用window.close()，在Tauri环境中会被正确处理
-    window.close();
+    await invoke("close_lyrics_window");
   };
 
   return (

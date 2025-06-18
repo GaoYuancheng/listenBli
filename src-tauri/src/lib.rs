@@ -1,38 +1,64 @@
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 use std::time::{SystemTime, UNIX_EPOCH};
 use serde::{Deserialize, Serialize};
-use tauri::{WebviewUrl, WebviewWindowBuilder};
-
+use tauri::{WebviewUrl, WebviewWindowBuilder, Manager};
 
 #[tauri::command]
-fn greet(app_handle: tauri::AppHandle) -> String {
+fn greet() -> String {
   let now = SystemTime::now();
-
   let epoch_ms = now.duration_since(UNIX_EPOCH).unwrap().as_millis();
   let res = format!("Hello world from Rust! Current epoch: {}", epoch_ms);
+  return res;
+}
 
-  let _lyrics_window = WebviewWindowBuilder::new(
+#[tauri::command]
+async fn create_lyrics_window(app_handle: tauri::AppHandle) -> Result<(), String> {
+  // 检查窗口是否已存在
+  if let Some(window) = app_handle.get_webview_window("lyrics-window") {
+    // 如果窗口已存在，将其聚焦
+    window.set_focus().map_err(|e| e.to_string())?;
+    return Ok(());
+  }
+
+  // 创建新窗口
+  let lyrics_window = WebviewWindowBuilder::new(
     &app_handle,
-    "lyrics-window11", // 唯一标识符
+    "lyrics-window", // 唯一标识符
     WebviewUrl::App("lyrics/external".into()) // 指向一个新的页面路径
   )
   .title("桌面歌词")
   .inner_size(400.0, 150.0)
-  .devtools(true)
-  // .devtools(true)
-  // .always_on_top(true)
-  // .resizable(true)
-  // .decorations(false) // 无边框窗口
-  // .transparent(true) // 支持透明背景
-  // .skip_taskbar(true) // 不在任务栏显示
-  .build();
-  // .map_err(|e| e.to_string())?;
+  .decorations(false) // 无边框窗口
+  .transparent(true) // 支持透明背景
+  .always_on_top(true) // 始终置顶
+  .skip_taskbar(true) // 不在任务栏显示
+  .devtools(false) // 生产环境关闭开发者工具
+  .build()
+  .map_err(|e| e.to_string())?;
 
-  // lyrics_window.open_devtools();
+  // 监听窗口关闭事件
+  lyrics_window.on_window_event(move |event| {
+    if let tauri::WindowEvent::CloseRequested { .. } = event {
+      // 窗口关闭时的处理逻辑
+      println!("Lyrics window closed");
+    }
+  });
 
-  // Ok(epoch_ms);
-  return res;
+  Ok(())
+}
 
+#[tauri::command]
+async fn close_lyrics_window(app_handle: tauri::AppHandle) -> Result<(), String> {
+  if let Some(window) = app_handle.get_webview_window("lyrics-window") {
+    window.close().map_err(|e| e.to_string())?;
+  }
+  Ok(())
+}
+
+#[tauri::command]
+async fn is_lyrics_window_open(app_handle: tauri::AppHandle) -> Result<bool, String> {
+  let window = app_handle.get_webview_window("lyrics-window");
+  Ok(window.is_some())
 }
 
 #[tauri::command]
@@ -97,7 +123,10 @@ pub fn run() {
     .plugin(tauri_plugin_opener::init())
     .invoke_handler(tauri::generate_handler![
       greet, 
-      get_lyrics
+      get_lyrics,
+      create_lyrics_window,
+      close_lyrics_window,
+      is_lyrics_window_open
     ])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");

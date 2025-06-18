@@ -17,6 +17,15 @@ export default function Home() {
       });
   }, []);
 
+  const testLyricsWindow = useCallback(async (): Promise<void> => {
+    try {
+      await invoke("create_lyrics_window");
+      console.log("Lyrics window created successfully");
+    } catch (error) {
+      console.error("Failed to create lyrics window:", error);
+    }
+  }, []);
+
   return (
     <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
       <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
@@ -44,6 +53,14 @@ export default function Home() {
           <p className="break-words w-md">
             {greeted ?? "Click the button to call the Rust function"}
           </p>
+        </div>
+
+        <div className="flex flex-col gap-2 items-start">
+          <RoundedButton
+            onClick={testLyricsWindow}
+            title="Test Lyrics Window"
+          />
+          <p className="text-sm text-gray-600">测试后端创建桌面歌词窗口功能</p>
         </div>
 
         <div className="mt-4 p-4 border border-gray-200 rounded-md bg-gray-50">

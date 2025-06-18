@@ -27,7 +27,7 @@ export default function LyricsPage() {
   const [hasExternalWindow, setHasExternalWindow] = useState<boolean>(false);
   const lyricsContainerRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const externalWindowRef = useRef<any>(null);
+  const externalWindowRef = useRef<WebviewWindow | null>(null);
 
   // 获取歌词的函数
   const fetchLyrics = async (name: string) => {
@@ -116,39 +116,27 @@ export default function LyricsPage() {
   // 打开外部歌词窗口
   const openExternalLyricsWindow = async () => {
     try {
-      // 检查窗口是否已存在
-      if (externalWindowRef.current) {
-        externalWindowRef.current.setFocus();
-        return;
-      }
+      // 调用后端创建窗口
+      await invoke("create_lyrics_window");
 
-      // 创建新窗口
-      const webview = new WebviewWindow("lyrics-window", {
-        url: "/lyrics/external",
-        title: "桌面歌词",
-        width: 400,
-        height: 150,
-        decorations: false,
-        transparent: true,
-        alwaysOnTop: false,
-        skipTaskbar: true,
-      });
-
-      // 保存窗口引用
-      externalWindowRef.current = webview;
-
-      // 监听窗口关闭事件
-      await webview.once("tauri://destroyed", () => {
-        externalWindowRef.current = null;
-        setHasExternalWindow(false);
-      });
-
-      // 监听窗口创建完成事件
-      await webview.once("tauri://created", () => {
-        setHasExternalWindow(true);
-      });
+      // 设置状态为已打开
+      setHasExternalWindow(true);
     } catch (error) {
       console.error("Failed to create external lyrics window:", error);
+    }
+  };
+
+  // 关闭外部歌词窗口
+  const closeExternalLyricsWindow = async () => {
+    try {
+      // 调用后端关闭窗口
+      await invoke("close_lyrics_window");
+
+      // 设置状态为已关闭
+      setHasExternalWindow(false);
+      externalWindowRef.current = null;
+    } catch (error) {
+      console.error("Failed to close external lyrics window:", error);
     }
   };
 
@@ -203,6 +191,20 @@ export default function LyricsPage() {
     };
   }, []);
 
+  // 页面加载时检查窗口状态
+  useEffect(() => {
+    const checkWindowStatus = async () => {
+      try {
+        const isOpen = await invoke<boolean>("is_lyrics_window_open");
+        setHasExternalWindow(isOpen);
+      } catch (error) {
+        console.error("Failed to check window status:", error);
+      }
+    };
+
+    void checkWindowStatus();
+  }, []);
+
   return (
     <div className="min-h-screen p-8 flex flex-col items-center">
       <div className="w-full max-w-3xl">
@@ -254,7 +256,7 @@ export default function LyricsPage() {
                 >
                   重置
                 </button>
-                <button
+                {/* <button
                   onClick={toggleDesktopLyrics}
                   className={`px-4 py-2 rounded-md ${
                     isWindowVisible
@@ -263,12 +265,20 @@ export default function LyricsPage() {
                   } text-white`}
                 >
                   {isWindowVisible ? "关闭桌面歌词" : "打开桌面歌词"}
-                </button>
+                </button> */}
                 <button
-                  onClick={openExternalLyricsWindow}
-                  className="px-4 py-2 bg-purple-500 text-white rounded-md hover:bg-purple-600"
+                  onClick={
+                    hasExternalWindow
+                      ? closeExternalLyricsWindow
+                      : openExternalLyricsWindow
+                  }
+                  className={`px-4 py-2 text-white rounded-md ${
+                    hasExternalWindow
+                      ? "bg-red-500 hover:bg-red-600"
+                      : "bg-purple-500 hover:bg-purple-600"
+                  }`}
                 >
-                  弹出歌词窗口
+                  {hasExternalWindow ? "关闭桌面歌词" : "弹出歌词窗口"}
                 </button>
               </div>
               <div>
