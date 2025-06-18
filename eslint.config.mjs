@@ -16,6 +16,7 @@ const eslintConfig = tseslint.config(
     // are already handled by Biome
     rules: {
       // eslint-plugin-jsx-a11y rules replaced by Biome
+      "@typescript-eslint/no-misused-promises": "off",
       "jsx-a11y/alt-text": "off",
       "jsx-a11y/anchor-has-content": "off",
       "jsx-a11y/anchor-is-valid": "off",
@@ -127,7 +128,7 @@ const eslintConfig = tseslint.config(
         tsconfigRootDir: import.meta.dirname,
       },
     },
-  },
+  }
 );
 
 export default eslintConfig;
