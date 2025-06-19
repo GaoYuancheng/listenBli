@@ -26,6 +26,7 @@ export default function LyricsPage() {
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [isWindowVisible, setIsWindowVisible] = useState<boolean>(false);
   const [hasExternalWindow, setHasExternalWindow] = useState<boolean>(false);
+  const [isLoopEnabled, setIsLoopEnabled] = useState<boolean>(true);
   const lyricsContainerRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const externalWindowRef = useRef<WebviewWindow | null>(null);
@@ -67,7 +68,30 @@ export default function LyricsPage() {
       timerRef.current = null;
     } else if (!isPlaying) {
       timerRef.current = setInterval(() => {
-        setCurrentTime((prev) => prev + 0.1);
+        setCurrentTime((prev) => {
+          const newTime = prev + 0.1;
+
+          // 检查是否播放完成
+          if (
+            lyrics.length > 0 &&
+            newTime >= lyrics[lyrics.length - 1].time + 2
+          ) {
+            // 如果启用了循环播放，则重新开始
+            if (isLoopEnabled) {
+              return 0;
+            } else {
+              // 否则停止播放
+              if (timerRef.current) {
+                clearInterval(timerRef.current);
+                timerRef.current = null;
+              }
+              setIsPlaying(false);
+              return prev;
+            }
+          }
+
+          return newTime;
+        });
       }, 100);
     }
     setIsPlaying(!isPlaying);
@@ -255,6 +279,19 @@ export default function LyricsPage() {
                 >
                   重置
                 </button>
+                <button
+                  onClick={() => {
+                    setIsLoopEnabled(!isLoopEnabled);
+                  }}
+                  className={`px-4 py-2 rounded-md ${
+                    isLoopEnabled
+                      ? "bg-green-500 hover:bg-green-600"
+                      : "bg-gray-400 hover:bg-gray-500"
+                  } text-white`}
+                  title={isLoopEnabled ? "关闭循环播放" : "开启循环播放"}
+                >
+                  🔁 {isLoopEnabled ? "循环" : "单次"}
+                </button>
                 {/* <button
                   onClick={toggleDesktopLyrics}
                   className={`px-4 py-2 rounded-md ${
@@ -290,7 +327,8 @@ export default function LyricsPage() {
 
             <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
               <p className="text-sm text-blue-700">
-                💡 提示：获取歌词后会自动开始播放，您也可以手动控制播放/暂停
+                💡
+                提示：获取歌词后会自动开始播放，播放完成后会自动重新播放，您也可以手动控制播放/暂停
               </p>
             </div>
 

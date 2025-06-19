@@ -19,11 +19,14 @@ export function updateExternalLyrics(
 export default function ExternalLyricsPage() {
   const [lyrics, setLyrics] = useState<LyricLine[]>([]);
   const [currentTime, setCurrentTime] = useState<number>(0);
-  const [isTransparent, setIsTransparent] = useState(false);
+  const [isTransparent, setIsTransparent] = useState(true);
   const [currentLineIndex, setCurrentLineIndex] = useState<number>(-1);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
+  const [isLoopEnabled, setIsLoopEnabled] = useState<boolean>(true);
+  const [isHovered, setIsHovered] = useState<boolean>(false);
   const windowRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const hoverTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // 获取当前歌词行索引
   const getCurrentLineIndex = (time: number, lyrics: LyricLine[]): number => {
@@ -65,7 +68,7 @@ export default function ExternalLyricsPage() {
 
     if (timeDiff < 0.5) {
       // 当前播放的歌词 - 亮色
-      return "text-yellow-300";
+      return "text-blue-300";
     } else {
       // 其他歌词 - 暗色
       return "text-gray-400";
@@ -79,7 +82,30 @@ export default function ExternalLyricsPage() {
       timerRef.current = null;
     } else if (!isPlaying) {
       timerRef.current = setInterval(() => {
-        setCurrentTime((prev) => prev + 0.1);
+        setCurrentTime((prev) => {
+          const newTime = prev + 0.1;
+
+          // 检查是否播放完成
+          if (
+            lyrics.length > 0 &&
+            newTime >= lyrics[lyrics.length - 1].time + 2
+          ) {
+            // 如果启用了循环播放，则重新开始
+            if (isLoopEnabled) {
+              return 0;
+            } else {
+              // 否则停止播放
+              if (timerRef.current) {
+                clearInterval(timerRef.current);
+                timerRef.current = null;
+              }
+              setIsPlaying(false);
+              return prev;
+            }
+          }
+
+          return newTime;
+        });
       }, 100);
     }
     setIsPlaying(!isPlaying);
@@ -146,6 +172,9 @@ export default function ExternalLyricsPage() {
       if (timerRef.current) {
         clearInterval(timerRef.current);
       }
+      if (hoverTimerRef.current) {
+        clearTimeout(hoverTimerRef.current);
+      }
     };
   }, []);
 
@@ -153,17 +182,41 @@ export default function ExternalLyricsPage() {
     void fetchLyrics("园游会");
   }, []);
 
+  // 处理鼠标进入
+  const handleMouseEnter = () => {
+    if (hoverTimerRef.current) {
+      clearTimeout(hoverTimerRef.current);
+    }
+    setIsHovered(true);
+  };
+
+  // 处理鼠标离开
+  const handleMouseLeave = () => {
+    if (hoverTimerRef.current) {
+      clearTimeout(hoverTimerRef.current);
+    }
+    hoverTimerRef.current = setTimeout(() => {
+      setIsHovered(false);
+    }, 200); // 200ms 延迟
+  };
+
   return (
     <div
       ref={windowRef}
       className={`fixed inset-0 ${
-        isTransparent ? "bg-black/30" : "bg-black/70"
-      } backdrop-blur-md text-white select-none`}
+        isTransparent ? "bg-transparent" : "bg-black/20"
+      } backdrop-blur-sm text-white select-none`}
       data-tauri-drag-region
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
     >
       {/* 窗口顶部拖拽区域 */}
       <div
-        className="h-8 bg-black/50 flex items-center justify-between px-3 cursor-move"
+        className={`absolute top-0 left-0 right-0 h-8 ${
+          isTransparent ? "bg-black/30" : "bg-black/50"
+        } flex items-center justify-between px-3 cursor-move transition-all duration-300 ${
+          isHovered ? "opacity-100" : "opacity-0 pointer-events-none"
+        }`}
         data-tauri-drag-region
       >
         <div className="text-xs opacity-70">桌面歌词</div>
@@ -181,6 +234,17 @@ export default function ExternalLyricsPage() {
             title="重置"
           >
             🔄
+          </button>
+          <button
+            onClick={() => {
+              setIsLoopEnabled(!isLoopEnabled);
+            }}
+            className={`text-xs opacity-70 hover:opacity-100 ${
+              isLoopEnabled ? "text-yellow-300" : "text-gray-400"
+            }`}
+            title={isLoopEnabled ? "关闭循环播放" : "开启循环播放"}
+          >
+            🔁
           </button>
           <button
             onClick={toggleTransparent}
@@ -207,17 +271,9 @@ export default function ExternalLyricsPage() {
         {/* 当前歌词 */}
         <div className="text-2xl font-bold text-center mb-3 transition-all duration-300 ease-in-out">
           <span
-            className={`${getColorGradient(
-              currentTime,
-              currentLineIndex >= 0 ? lyrics[currentLineIndex]?.time || 0 : 0
-            )} transition-all duration-300`}
+            className={`text-blue-300 transition-all duration-300`}
             style={{
-              textShadow: getColorGradient(
-                currentTime,
-                currentLineIndex >= 0 ? lyrics[currentLineIndex]?.time || 0 : 0
-              ).includes("yellow")
-                ? "0 0 10px rgba(255, 255, 255, 0.3)"
-                : "none",
+              textShadow: "0 0 10px rgba(255, 255, 255, 0.3)",
             }}
           >
             {getCurrentLyric()}
@@ -226,20 +282,13 @@ export default function ExternalLyricsPage() {
 
         {/* 下一句歌词 */}
         <div className="text-lg text-center mb-4 transition-all duration-300 ease-in-out opacity-80">
-          <span
-            className={`${getColorGradient(
-              currentTime,
-              currentLineIndex >= 0 && currentLineIndex < lyrics.length - 1
-                ? lyrics[currentLineIndex + 1]?.time || 0
-                : 0
-            )} transition-all duration-300`}
-          >
+          <span className={`text-gray-400  transition-all duration-300`}>
             {getNextLyric()}
           </span>
         </div>
 
         {/* 进度条 */}
-        {lyrics.length > 0 && currentLineIndex >= 0 && (
+        {/* {lyrics.length > 0 && currentLineIndex >= 0 && (
           <div className="w-full max-w-xs">
             <div className="w-full bg-gray-600 rounded-full h-1.5">
               <div
@@ -257,7 +306,7 @@ export default function ExternalLyricsPage() {
               {(currentTime % 60).toFixed(1).padStart(4, "0")}
             </div>
           </div>
-        )}
+        )} */}
       </div>
     </div>
   );

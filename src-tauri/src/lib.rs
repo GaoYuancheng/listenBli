@@ -1,7 +1,7 @@
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 use std::time::{SystemTime, UNIX_EPOCH};
 use serde::{Deserialize, Serialize};
-use tauri::{WebviewUrl, WebviewWindowBuilder, Manager};
+use tauri::{window::Color, Manager, WebviewUrl, WebviewWindowBuilder};
 
 #[tauri::command]
 fn greet() -> String {
@@ -30,6 +30,7 @@ async fn create_lyrics_window(app_handle: tauri::AppHandle) -> Result<(), String
   .inner_size(400.0, 150.0)
   .decorations(false) // 无边框窗口
   .transparent(true) // 支持透明背景
+  .background_color(Color(0,0,0,0)) // 设置透明背景色 (ARGB: 00 00 00 00)
   .always_on_top(true) // 始终置顶
   .skip_taskbar(true) // 不在任务栏显示
   .devtools(true) // 生产环境关闭开发者工具
