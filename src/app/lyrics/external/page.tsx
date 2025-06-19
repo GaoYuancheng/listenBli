@@ -1,11 +1,7 @@
 "use client";
+import { LyricLine, parseLrc } from "@/utils/lrc";
 import { invoke } from "@tauri-apps/api/core";
 import { useState, useEffect, useRef } from "react";
-
-interface LyricLine {
-  time: number;
-  text: string;
-}
 
 // 模拟歌词数据共享，实际应用中可以使用状态管理或本地存储
 let globalLyrics: LyricLine[] = [];
@@ -25,20 +21,6 @@ export default function ExternalLyricsPage() {
   const [currentTime, setCurrentTime] = useState<number>(0);
   const [isTransparent, setIsTransparent] = useState(false);
   const windowRef = useRef<HTMLDivElement>(null);
-
-  // 更新来自全局状态的歌词数据
-  useEffect(() => {
-    const intervalId = setInterval(() => {
-      if (globalLyrics.length > 0) {
-        setLyrics([...globalLyrics]);
-        setCurrentTime(globalCurrentTime);
-      }
-    }, 100);
-
-    return () => {
-      clearInterval(intervalId);
-    };
-  }, []);
 
   // 获取当前歌词
   const getCurrentLyric = () => {
@@ -99,6 +81,24 @@ export default function ExternalLyricsPage() {
     // 在浏览器环境中使用window.close()，在Tauri环境中会被正确处理
     await invoke("close_lyrics_window");
   };
+
+  // 获取歌词的函数
+  const fetchLyrics = async (name: string) => {
+    try {
+      // 调用Rust后端函数获取歌词
+      const lrcData = await invoke<string>("get_lyrics", { songName: name });
+
+      // 解析LRC格式歌词
+      const parsedLyrics = parseLrc(lrcData);
+      setLyrics(parsedLyrics);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  useEffect(() => {
+    void fetchLyrics("园游会");
+  }, []);
 
   return (
     <div
