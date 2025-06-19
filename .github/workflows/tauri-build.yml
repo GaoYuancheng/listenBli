@@ -32,22 +32,24 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
+
       - name: Install Rust x86_64 target (macOS-intel only)
         if: matrix.label == 'macos-intel'
         run: rustup target add x86_64-apple-darwin
+
       - name: Install dependencies (pnpm)
         run: pnpm install
+
       - name: Tauri build (macOS Intel)
         if: matrix.label == 'macos-intel'
-        run: arch -x86_64 pnpm run tauri build
+        run: arch -x86_64 pnpm run tauri build --target x86_64-apple-darwin
+
       - name: Tauri build (macOS Universal)
         if: matrix.label == 'macos-universal'
-        run: pnpm run tauri build
+        run: pnpm run tauri build --target universal-apple-darwin
+
       - name: Tauri build (Windows)
         if: matrix.label == 'windows'
-        run: pnpm run tauri build
-      - name: Tauri build (Linux)
-        if: matrix.label == 'linux'
         run: pnpm run tauri build
       - name: Upload artifacts
         if: success()
