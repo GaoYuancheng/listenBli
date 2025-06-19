@@ -9,6 +9,24 @@
     "beforeBuildCommand": "pnpm build",
     "frontendDist": "../dist"
   },
+  "app": {
+    "macOSPrivateApi": true,
+    "windows": [
+      {
+        "title": "tauri-nextjs-template",
+        "width": 800,
+        "height": 600,
+        "resizable": true,
+        "fullscreen": false,
+        "decorations": true,
+        "transparent": false,
+        "alwaysOnTop": false
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
 
   "bundle": {
     "active": true,

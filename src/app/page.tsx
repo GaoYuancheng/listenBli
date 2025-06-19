@@ -17,15 +17,15 @@ function TimeGreeting() {
     let greetText = "";
 
     if (hour >= 5 && hour < 12) {
-      greetText = "早上好！开始美好的一天吧";
+      greetText = "早上好！美丽的阳姐 开始美好的一天吧";
     } else if (hour >= 12 && hour < 14) {
-      greetText = "中午好！休息一下吧";
+      greetText = "中午好！美丽的阳姐 休息一下吧";
     } else if (hour >= 14 && hour < 18) {
-      greetText = "下午好！继续加油";
+      greetText = "下午好！美丽的阳姐 继续加油";
     } else if (hour >= 18 && hour < 22) {
-      greetText = "晚上好！放松一下听听歌吧";
+      greetText = "晚上好！美丽的阳姐 放松一下听听歌吧";
     } else {
-      greetText = "夜深了，记得早点休息哦";
+      greetText = "夜深了，美丽的阳姐 记得早点休息哦";
     }
 
     setGreeting(greetText);
@@ -95,7 +95,6 @@ export default function Home() {
                   当前时间：
                   {dayjs().format("YYYY-MM-DD HH:mm:ss")}
                 </div>
-                <div>阳姐今天也要开心一整天</div>
                 <div>点击下方按钮听听音乐放松一下吧</div>
               </>
             )}
