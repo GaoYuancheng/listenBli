@@ -143,6 +143,7 @@ async fn get_lyrics(song_name: String) -> Result<String, String> {
 [03:16.18]鸡蛋糕跟你嘴角果酱我都想要尝
 [03:20.14]园游会影片在播放
 [03:22.33]这个世界约好一起逛
+[04:15.00]这个世界约好一起逛
 "#,
     song_name
   );
