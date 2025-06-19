@@ -43,6 +43,16 @@ export default function LyricsPage() {
       const parsedLyrics = parseLrc(lrcData);
       setLyrics(parsedLyrics);
       setLoading(false);
+
+      // 获取完歌词后直接开始播放
+      if (parsedLyrics.length > 0) {
+        // 重置播放器
+        resetPlayer();
+        // 延迟一小段时间后开始播放，确保状态更新完成
+        setTimeout(() => {
+          togglePlayPause();
+        }, 100);
+      }
     } catch (err) {
       setError("获取歌词失败，请重试");
       setLoading(false);
@@ -76,7 +86,15 @@ export default function LyricsPage() {
   // 处理搜索
   const handleSearch = () => {
     if (songName.trim()) {
-      resetPlayer();
+      // 停止当前播放
+      if (isPlaying && timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+        setIsPlaying(false);
+      }
+      // 重置时间
+      setCurrentTime(0);
+      // 获取新歌词
       void fetchLyrics(songName);
     }
   };
@@ -155,6 +173,7 @@ export default function LyricsPage() {
       const lineElements =
         lyricsContainerRef.current.querySelectorAll(".lyric-line");
       const currentElement = lineElements[currentLineIndex];
+
       currentElement.scrollIntoView({
         behavior: "smooth",
         block: "center",
@@ -269,24 +288,42 @@ export default function LyricsPage() {
               </div>
             </div>
 
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+              <p className="text-sm text-blue-700">
+                💡 提示：获取歌词后会自动开始播放，您也可以手动控制播放/暂停
+              </p>
+            </div>
+
             <div
               ref={lyricsContainerRef}
               className="h-96 overflow-y-auto border border-gray-200 rounded-md p-4 bg-gray-50"
             >
-              {lyrics.map((line, index) => (
-                <div
-                  key={index}
-                  className={`lyric-line py-2 transition-all ${
-                    line.time <= currentTime &&
-                    (index === lyrics.length - 1 ||
-                      lyrics[index + 1].time > currentTime)
-                      ? "text-blue-600 font-bold text-lg"
-                      : "text-gray-700"
-                  }`}
-                >
-                  {line.text}
-                </div>
-              ))}
+              {lyrics.map((line, index) => {
+                // 计算当前行是否应该高亮
+                const isCurrentLine =
+                  line.time <= currentTime &&
+                  (index === lyrics.length - 1 ||
+                    lyrics[index + 1].time > currentTime);
+
+                // 计算颜色 - 只区分当前歌词和其他歌词
+                const timeDiff = Math.abs(currentTime - line.time);
+                let colorClass = "text-gray-700";
+
+                if (timeDiff < 0.5) {
+                  colorClass = "text-blue-600 font-bold text-lg";
+                } else {
+                  colorClass = "text-gray-500";
+                }
+
+                return (
+                  <div
+                    key={index}
+                    className={`lyric-line py-2 transition-all duration-300 ${colorClass}`}
+                  >
+                    {line.text}
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}

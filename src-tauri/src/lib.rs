@@ -32,7 +32,7 @@ async fn create_lyrics_window(app_handle: tauri::AppHandle) -> Result<(), String
   .transparent(true) // 支持透明背景
   .always_on_top(true) // 始终置顶
   .skip_taskbar(true) // 不在任务栏显示
-  .devtools(false) // 生产环境关闭开发者工具
+  .devtools(true) // 生产环境关闭开发者工具
   .build()
   .map_err(|e| e.to_string())?;
 

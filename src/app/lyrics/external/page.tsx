@@ -20,55 +20,79 @@ export default function ExternalLyricsPage() {
   const [lyrics, setLyrics] = useState<LyricLine[]>([]);
   const [currentTime, setCurrentTime] = useState<number>(0);
   const [isTransparent, setIsTransparent] = useState(false);
+  const [currentLineIndex, setCurrentLineIndex] = useState<number>(-1);
+  const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const windowRef = useRef<HTMLDivElement>(null);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // 获取当前歌词
-  const getCurrentLyric = () => {
-    if (lyrics.length === 0) return "暂无歌词";
+  // 获取当前歌词行索引
+  const getCurrentLineIndex = (time: number, lyrics: LyricLine[]): number => {
+    if (lyrics.length === 0) return -1;
 
-    let currentLineIndex = -1;
-
-    // 遍历查找合适的行
     for (let i = 0; i < lyrics.length; i++) {
       const currentLine = lyrics[i];
       const nextLine = i < lyrics.length - 1 ? lyrics[i + 1] : null;
 
-      if (currentLine.time <= currentTime) {
-        if (nextLine === null || nextLine.time > currentTime) {
-          currentLineIndex = i;
-          break;
+      if (currentLine.time <= time) {
+        if (nextLine === null || nextLine.time > time) {
+          return i;
         }
       }
     }
 
-    if (currentLineIndex === -1) {
-      return lyrics[0]?.text || "暂无歌词";
+    return -1;
+  };
+
+  // 获取当前歌词
+  const getCurrentLyric = (): string => {
+    if (currentLineIndex === -1 || currentLineIndex >= lyrics.length) {
+      return "暂无歌词";
     }
     return lyrics[currentLineIndex].text;
   };
 
   // 获取下一句歌词
-  const getNextLyric = () => {
-    if (lyrics.length === 0) return "";
-
-    let currentLineIndex = -1;
-
-    // 遍历查找合适的行
-    for (let i = 0; i < lyrics.length; i++) {
-      const currentLine = lyrics[i];
-      const nextLine = i < lyrics.length - 1 ? lyrics[i + 1] : null;
-
-      if (currentLine.time <= currentTime) {
-        if (nextLine === null || nextLine.time > currentTime) {
-          currentLineIndex = i;
-          break;
-        }
-      }
-    }
-
-    if (currentLineIndex === -1 || currentLineIndex === lyrics.length - 1)
+  const getNextLyric = (): string => {
+    if (currentLineIndex === -1 || currentLineIndex >= lyrics.length - 1) {
       return "";
+    }
     return lyrics[currentLineIndex + 1].text;
+  };
+
+  // 计算颜色渐变
+  const getColorGradient = (time: number, lineTime: number): string => {
+    const timeDiff = Math.abs(time - lineTime);
+
+    if (timeDiff < 0.5) {
+      // 当前播放的歌词 - 亮色
+      return "text-yellow-300";
+    } else {
+      // 其他歌词 - 暗色
+      return "text-gray-400";
+    }
+  };
+
+  // 切换播放/暂停
+  const togglePlayPause = () => {
+    if (isPlaying && timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    } else if (!isPlaying) {
+      timerRef.current = setInterval(() => {
+        setCurrentTime((prev) => prev + 0.1);
+      }, 100);
+    }
+    setIsPlaying(!isPlaying);
+  };
+
+  // 重置播放
+  const resetPlayer = () => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    setCurrentTime(0);
+    setIsPlaying(false);
   };
 
   // 切换透明度
@@ -91,10 +115,39 @@ export default function ExternalLyricsPage() {
       // 解析LRC格式歌词
       const parsedLyrics = parseLrc(lrcData);
       setLyrics(parsedLyrics);
+
+      // 更新当前行索引
+      const newIndex = getCurrentLineIndex(globalCurrentTime, parsedLyrics);
+      setCurrentLineIndex(newIndex);
+
+      // 获取完歌词后直接开始播放
+      if (parsedLyrics.length > 0) {
+        // 重置播放器
+        resetPlayer();
+        // 延迟一小段时间后开始播放，确保状态更新完成
+        setTimeout(() => {
+          togglePlayPause();
+        }, 100);
+      }
     } catch (err) {
       console.error(err);
     }
   };
+
+  // 更新当前行索引
+  useEffect(() => {
+    const newIndex = getCurrentLineIndex(currentTime, lyrics);
+    setCurrentLineIndex(newIndex);
+  }, [currentTime, lyrics]);
+
+  // 组件卸载时清理定时器
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     void fetchLyrics("园游会");
@@ -116,6 +169,20 @@ export default function ExternalLyricsPage() {
         <div className="text-xs opacity-70">桌面歌词</div>
         <div className="flex space-x-2">
           <button
+            onClick={togglePlayPause}
+            className="text-xs opacity-70 hover:opacity-100"
+            title={isPlaying ? "暂停" : "播放"}
+          >
+            {isPlaying ? "⏸️" : "▶️"}
+          </button>
+          <button
+            onClick={resetPlayer}
+            className="text-xs opacity-70 hover:opacity-100"
+            title="重置"
+          >
+            🔄
+          </button>
+          <button
             onClick={toggleTransparent}
             className="text-xs opacity-70 hover:opacity-100"
             title={isTransparent ? "增加不透明度" : "增加透明度"}
@@ -133,13 +200,64 @@ export default function ExternalLyricsPage() {
       </div>
 
       {/* 歌词内容区域 */}
-      <div className="p-4 flex flex-col items-center" data-tauri-drag-region>
-        <div className="text-lg font-bold text-center mb-1">
-          {getCurrentLyric()}
+      <div
+        className="p-4 flex flex-col items-center justify-center h-full"
+        data-tauri-drag-region
+      >
+        {/* 当前歌词 */}
+        <div className="text-2xl font-bold text-center mb-3 transition-all duration-300 ease-in-out">
+          <span
+            className={`${getColorGradient(
+              currentTime,
+              currentLineIndex >= 0 ? lyrics[currentLineIndex]?.time || 0 : 0
+            )} transition-all duration-300`}
+            style={{
+              textShadow: getColorGradient(
+                currentTime,
+                currentLineIndex >= 0 ? lyrics[currentLineIndex]?.time || 0 : 0
+              ).includes("yellow")
+                ? "0 0 10px rgba(255, 255, 255, 0.3)"
+                : "none",
+            }}
+          >
+            {getCurrentLyric()}
+          </span>
         </div>
-        <div className="text-sm text-gray-300 text-center">
-          {getNextLyric()}
+
+        {/* 下一句歌词 */}
+        <div className="text-lg text-center mb-4 transition-all duration-300 ease-in-out opacity-80">
+          <span
+            className={`${getColorGradient(
+              currentTime,
+              currentLineIndex >= 0 && currentLineIndex < lyrics.length - 1
+                ? lyrics[currentLineIndex + 1]?.time || 0
+                : 0
+            )} transition-all duration-300`}
+          >
+            {getNextLyric()}
+          </span>
         </div>
+
+        {/* 进度条 */}
+        {lyrics.length > 0 && currentLineIndex >= 0 && (
+          <div className="w-full max-w-xs">
+            <div className="w-full bg-gray-600 rounded-full h-1.5">
+              <div
+                className="bg-gradient-to-r from-yellow-400 to-orange-400 h-1.5 rounded-full transition-all duration-300 ease-out"
+                style={{
+                  width: `${Math.min(
+                    100,
+                    (currentTime / (lyrics[lyrics.length - 1]?.time || 1)) * 100
+                  )}%`,
+                }}
+              />
+            </div>
+            <div className="text-xs text-gray-400 text-center mt-2">
+              {Math.floor(currentTime / 60)}:
+              {(currentTime % 60).toFixed(1).padStart(4, "0")}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -4,7 +4,7 @@ export interface LyricLine {
 }
 
 // 解析LRC格式歌词的函数
-export const parseLrc = (lrc: string): LyricLine[] => {
+export function parseLrc(lrc: string): LyricLine[] {
   const lines = lrc.split("\n");
   const timeRegex = /\[(\d{2}):(\d{2})\.(\d{2})\]/;
 
@@ -21,5 +21,5 @@ export const parseLrc = (lrc: string): LyricLine[] => {
       }
       return null;
     })
-    .filter((line): line is LyricLine => line !== null);
-};
+    .filter((line): line is LyricLine => line !== null && line.text.length > 0);
+}
