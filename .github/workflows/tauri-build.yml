@@ -8,7 +8,7 @@ jobs:
   build:
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout code
@@ -27,8 +27,6 @@ jobs:
           components: rustfmt, clippy
       - name: Install dependencies (pnpm)
         run: pnpm install
-      - name: Build frontend
-        run: pnpm build
       - name: Tauri build
         run: pnpm run tauri build
       - name: Upload artifacts
