@@ -2012,6 +2012,20 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6db9c683daf087dc577b7506e9695b3d556a9f3849903fa28186283afd6809e9"
 
 [[package]]
+name = "listenBli"
+version = "0.1.0"
+dependencies = [
+ "regex",
+ "reqwest 0.11.27",
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-opener",
+ "tokio",
+]
+
+[[package]]
 name = "litemap"
 version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3862,20 +3876,6 @@ dependencies = [
  "syn 2.0.98",
  "tauri-codegen",
  "tauri-utils",
-]
-
-[[package]]
-name = "tauri-nextjs-template"
-version = "0.1.0"
-dependencies = [
- "regex",
- "reqwest 0.11.27",
- "serde",
- "serde_json",
- "tauri",
- "tauri-build",
- "tauri-plugin-opener",
- "tokio",
 ]
 
 [[package]]

@@ -37,7 +37,7 @@ export default function LyricsWindow({
 
   // 获取当前歌词
   const getCurrentLyric = () => {
-    if (!lyrics || lyrics.length === 0) return "暂无歌词";
+    if (lyrics.length === 0) return "暂无歌词";
 
     let currentLineIndex = -1;
 
@@ -60,7 +60,7 @@ export default function LyricsWindow({
 
   // 获取下一句歌词
   const getNextLyric = () => {
-    if (!lyrics || lyrics.length === 0) return "";
+    if (lyrics.length === 0) return "";
 
     let currentLineIndex = -1;
 

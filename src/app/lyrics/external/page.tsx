@@ -3,18 +3,7 @@ import { LyricLine, parseLrc } from "@/utils/lrc";
 import { invoke } from "@tauri-apps/api/core";
 import { useState, useEffect, useRef } from "react";
 
-// 模拟歌词数据共享，实际应用中可以使用状态管理或本地存储
-let globalLyrics: LyricLine[] = [];
-let globalCurrentTime = 0;
-
-// 注册更新歌词数据的函数
-export function updateExternalLyrics(
-  lyrics: LyricLine[],
-  currentTime: number
-): void {
-  globalLyrics = lyrics;
-  globalCurrentTime = currentTime;
-}
+const globalCurrentTime = 0;
 
 export default function ExternalLyricsPage() {
   const [lyrics, setLyrics] = useState<LyricLine[]>([]);

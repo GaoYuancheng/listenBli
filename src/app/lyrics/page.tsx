@@ -3,7 +3,6 @@ import { useState, useEffect, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { updateExternalLyrics } from "./external/page";
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { parseLrc } from "@/utils/lrc";
 
@@ -161,17 +160,6 @@ export default function LyricsPage() {
       console.error("Failed to close external lyrics window:", error);
     }
   };
-
-  // 更新歌词时间时同步到外部窗口
-  useEffect(() => {
-    if (hasExternalWindow) {
-      try {
-        updateExternalLyrics(lyrics, currentTime);
-      } catch (error) {
-        console.error("Failed to update external lyrics:", error);
-      }
-    }
-  }, [currentTime, lyrics, hasExternalWindow]);
 
   // 滚动到当前歌词
   useEffect(() => {
