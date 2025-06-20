@@ -99,24 +99,38 @@ export default function Home() {
               </>
             )}
           </div>
-          <div>
+          {/* <div>
             <RoundedButton onClick={testLyricsWindow} title="打开歌曲试听" />
-          </div>
+          </div> */}
         </div>
 
-        {/* <div className="mt-4 p-4 border border-gray-200 rounded-md bg-gray-50">
+        <div className="mt-4 p-4 border border-gray-200 rounded-md bg-gray-50">
           <h2 className="text-xl font-bold mb-2">应用功能</h2>
           <ul className="list-inside list-disc">
             <li className="mb-2">
-              <Link href="/lyrics" className="text-blue-500 hover:underline">
-                歌词搜索与滚动
-              </Link>
+              <a
+                onClick={testLyricsWindow}
+                className="text-blue-500 hover:underline"
+              >
+                打开歌曲试听-桌面歌词
+              </a>
               <span className="ml-2 text-sm text-gray-500">
                 - 根据歌曲名称获取歌词并实现歌词滚动
               </span>
             </li>
+            <li className="mb-2">
+              <Link
+                href="/dazzle"
+                className="text-pink-500 hover:underline font-semibold"
+              >
+                眼花特效页面
+              </Link>
+              <span className="ml-2 text-sm text-gray-500">
+                - 彩色粒子/眩光/酷炫动画，点击画布可刷新特效
+              </span>
+            </li>
           </ul>
-        </div>*/}
+        </div>
       </main>
       {/* <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
        <a
