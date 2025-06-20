@@ -2,6 +2,7 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 use serde::{Deserialize, Serialize};
 use tauri::{window::Color, Manager, WebviewUrl, WebviewWindowBuilder};
+mod user;
 
 #[tauri::command]
 fn greet() -> String {
@@ -172,7 +173,8 @@ pub fn run() {
       get_lyrics,
       create_lyrics_window,
       close_lyrics_window,
-      is_lyrics_window_open
+      is_lyrics_window_open,
+      user::get_current_username
     ])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");

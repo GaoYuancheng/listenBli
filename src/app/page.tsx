@@ -12,20 +12,21 @@ import dayjs from "dayjs";
 function TimeGreeting() {
   const [greeting, setGreeting] = useState("");
 
-  const updateGreeting = () => {
+  const updateGreeting = async () => {
     const hour = new Date().getHours();
     let greetText = "";
+    const username = await invoke<string>("get_current_username");
 
     if (hour >= 5 && hour < 12) {
-      greetText = "早上好！美丽的阳姐 开始美好的一天吧";
+      greetText = `早上好！${username} 开始美好的一天吧`;
     } else if (hour >= 12 && hour < 14) {
-      greetText = "中午好！美丽的阳姐 休息一下吧";
+      greetText = `中午好！${username} 休息一下吧`;
     } else if (hour >= 14 && hour < 18) {
-      greetText = "下午好！美丽的阳姐 继续加油";
+      greetText = `下午好！${username} 继续加油`;
     } else if (hour >= 18 && hour < 22) {
-      greetText = "晚上好！美丽的阳姐 放松一下听听歌吧";
+      greetText = `晚上好！${username} 放松一下听听歌吧`;
     } else {
-      greetText = "夜深了，美丽的阳姐 记得早点休息哦";
+      greetText = `夜深了! ${username} 记得早点休息哦`;
     }
 
     setGreeting(greetText);
@@ -33,7 +34,7 @@ function TimeGreeting() {
 
   useEffect(() => {
     // 初始化问候语
-    updateGreeting();
+    void updateGreeting();
   }, []);
 
   return <p className="text-lg text-gray-700">{greeting}</p>;
@@ -110,7 +111,7 @@ export default function Home() {
             <li className="mb-2">
               <a
                 onClick={testLyricsWindow}
-                className="text-blue-500 hover:underline"
+                className="text-blue-500 hover:underline cursor-pointer"
               >
                 打开歌曲试听-桌面歌词
               </a>

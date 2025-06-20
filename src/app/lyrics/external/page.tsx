@@ -268,14 +268,12 @@ export default function ExternalLyricsPage() {
             {getCurrentLyric()}
           </span>
         </div>
-
         {/* 下一句歌词 */}
         <div className="text-lg text-center mb-4 transition-all duration-300 ease-in-out opacity-80">
           <span className={`text-gray-400  transition-all duration-300`}>
             {getNextLyric()}
           </span>
         </div>
-
         {/* 进度条 */}
         {/* {lyrics.length > 0 && currentLineIndex >= 0 && (
           <div className="w-full max-w-xs">
