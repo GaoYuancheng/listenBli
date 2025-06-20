@@ -1,115 +1,62 @@
-# Tauri 2.0 + Next.js 15 App Router Template
+## 项目介绍
 
-![Tauri window screenshot](public/tauri-nextjs-template-2_screenshot.png)
+解决 xxx 音乐 云盘 无法展示桌面歌词问题
 
-This is a [Tauri](https://v2.tauri.app/) project template using [Next.js](https://nextjs.org/),
-bootstrapped by combining [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app)
-and [`create tauri-app`](https://v2.tauri.app/start/create-project/).
+## 技术栈
 
-This template uses [`pnpm`](https://pnpm.io/) as the Node.js dependency
-manager, and uses the [App Router](https://nextjs.org/docs/app) model for Next.js.
+- [Tauri2](https://v2.tauri.app/)
+- [Next.js15](https://nextjs.org/)
+- [`create tauri-app`](https://v2.tauri.app/start/create-project/)
+- [`pnpm`](https://pnpm.io/)
+- [App Router](https://nextjs.org/docs/app)
+- [TailwindCSS 4](https://tailwindcss.com/)
+- [Rust](https://www.rust-lang.org/)
+- [Biome](https://biomejs.dev/)
 
-## Template Features
+### TODO
 
-- TypeScript frontend using [Next.js 15](https://nextjs.org/) React framework
-- [TailwindCSS 4](https://tailwindcss.com/) as a utility-first atomic CSS framework
-  - The example page in this template app has been updated to use only TailwindCSS
-  - While not included by default, consider using
-    [React Aria components](https://react-spectrum.adobe.com/react-aria/index.html)
-    and/or [HeadlessUI components](https://headlessui.com/) for completely unstyled and
-    fully accessible UI components, which integrate nicely with TailwindCSS
-- Opinionated formatting and linting already setup and enabled
-  - [Biome](https://biomejs.dev/) for a combination of fast formatting, linting, and
-    import sorting of TypeScript code, and [ESLint](https://eslint.org/) for any missing
-    Next.js linter rules not covered by Biome
-  - [clippy](https://github.com/rust-lang/rust-clippy) and
-    [rustfmt](https://github.com/rust-lang/rustfmt) for Rust code
-- GitHub Actions to check code formatting and linting for both TypeScript and Rust
+1. [ ] 加载指定目录音乐文件 .mp3/.flac ...
 
-## Getting Started
+- 目录缓存到本地 持久生效
 
-### Running development server and use Tauri window
+2. [ ] 歌曲列表页
 
-After cloning for the first time, change your app identifier inside
-`src-tauri/tauri.conf.json` to your own:
+- 支持搜索/排序/过滤
+- 支持播放/暂停/上一首/下一首
+- 支持右键菜单
 
-```jsonc
-{
-  // ...
-  // The default "com.tauri.dev" will prevent you from building in release mode
-  "identifier": "com.my-application-name.app",
-  // ...
-}
+3. [ ] 播放时根据歌曲名自动加载对应歌词 .lrc 文件
+4. [ ] 支持自定义 歌词颜色/字体大小/字体样式
+5. [ ] 根据歌曲名自动联网获取歌词
+
+### 问题记录
+
+#### 1. 无法打开新窗口
+
+在 src-tauri\capabilities\default.json 中添加
+
+```json
+"core:webview:allow-create-webview-window",
 ```
 
-To develop and run the frontend in a Tauri window:
+#### 2. 为什么窗口引用要保存到后端
 
-```shell
-pnpm tauri dev
-```
+因为 tauri 的 webview 窗口无法直接在组件中引用，所以需要保存到后端，然后通过后端来关闭窗口
 
-This will load the Next.js frontend directly in a Tauri webview window, in addition to
-starting a development server on `localhost:3000`.
-Press <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>I</kbd> in a Chromium based WebView (e.g. on
-Windows) to open the web developer console from the Tauri window.
+#### 3. 使用 window.close() 关闭窗口后 是会有透明的小浮层
 
-### Building for release
+因为歌词窗口是使用 webview 打开的，所以无法直接关闭，需要使用 tauri 的 api 来关闭
 
-To export the Next.js frontend via SSG and build the Tauri application for release:
+#### 4.pnpm run tauri build 打包报错问题
 
-```shell
-pnpm tauri build
-```
+%localappdata% => C:\Users\admin\AppData\Local
 
-### Source structure
+Download https://github.com/wixtoolset/wix3/releases/download/wix3141rtm/wix314-binaries.zip and extract to %localappdata%\tauri\WixTools314.
+Download https://github.com/tauri-apps/binary-releases/releases/download/nsis-3/nsis-3.zip and extract to %localappdata%\tauri\NSIS.
+Download https://github.com/tauri-apps/nsis-tauri-utils/releases/download/nsis_tauri_utils-v0.4.1/nsis_tauri_utils.dll and put it into %localappdata%\tauri\NSIS\Plugins\x86-unicode\nsis_tauri_utils.dll.
 
-Next.js frontend source files are located in `src/` and Tauri Rust application source
-files are located in `src-tauri/`. Please consult the Next.js and Tauri documentation
-respectively for questions pertaining to either technology.
+#### 5. windows 环境怎么打出 dmg .app 包
 
-## Caveats
+使用 github actions 在 github 提供的对应环境中打出 macOS/Linux/Windows 包
 
-### Static Site Generation / Pre-rendering
-
-Next.js is a great React frontend framework which supports server-side rendering (SSR)
-as well as static site generation (SSG or pre-rendering). For the purposes of creating a
-Tauri frontend, only SSG can be used since SSR requires an active Node.js server.
-
-Please read into the Next.js documentation for [Static Exports](https://nextjs.org/docs/app/building-your-application/deploying/static-exports)
-for an explanation of supported / unsupported features and caveats.
-
-### `next/image`
-
-The [`next/image` component](https://nextjs.org/docs/basic-features/image-optimization)
-is an enhancement over the regular `<img>` HTML element with server-side optimizations
-to dynamically scale the image quality. This is only supported when deploying the
-frontend onto Vercel directly, and must be disabled to properly export the frontend
-statically. As such, the
-[`unoptimized` property](https://nextjs.org/docs/api-reference/next/image#unoptimized)
-is set to true for the `next/image` component in the `next.config.js` configuration.
-This will allow the image to be served as-is, without changes to its quality, size,
-or format.
-
-### ReferenceError: window/navigator is not defined
-
-If you are using Tauri's `invoke` function or any OS related Tauri function from within
-JavaScript, you may encounter this error when importing the function in a global,
-non-browser context. This is due to the nature of Next.js' dev server effectively
-running a Node.js server for SSR and hot module replacement (HMR), and Node.js does not
-have a notion of `window` or `navigator`.
-
-The solution is to ensure that the Tauri functions are imported as late as possible
-from within a client-side React component, or via [lazy loading](https://nextjs.org/docs/app/building-your-application/optimizing/lazy-loading).
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and
-  API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-And to learn more about Tauri, take a look at the following resources:
-
-- [Tauri Documentation - Guides](https://v2.tauri.app/start/) - learn about the Tauri
-  toolkit.
+详见 .github/workflows/tauri-build.yml
