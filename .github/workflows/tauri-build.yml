@@ -34,27 +34,41 @@ jobs:
           components: rustfmt, clippy
 
       - name: Install Rust x86_64 target (macOS-intel only)
-        if: matrix.label == 'macos-intel'
+        if: matrix.os == 'macos-latest'
         run: rustup target add x86_64-apple-darwin
 
       - name: Install dependencies (pnpm)
         run: pnpm install
 
-      - name: Tauri build (macOS Intel)
-        if: matrix.label == 'macos-intel'
-        run: arch -x86_64 pnpm run tauri build --target x86_64-apple-darwin
-
       - name: Tauri build (macOS Universal)
         if: matrix.label == 'macos-universal'
         run: pnpm run tauri build --target universal-apple-darwin
 
-      - name: Tauri build (Windows)
-        if: matrix.label == 'windows'
-        run: pnpm run tauri build
       - name: Upload artifacts
-        if: success()
+        if: success() && matrix.label == 'macos-universal'
         uses: actions/upload-artifact@v4
         with:
           name: tauri-bundle-${{ matrix.label }}
-          path: |
-            src-tauri/target/release/bundle/
+          path: src-tauri/target/universal-apple-darwin/release/bundle/
+
+      - name: Tauri build (macOS Intel)
+        if: matrix.label == 'macos-intel'
+        run: pnpm run tauri build --target x86_64-apple-darwin
+
+      - name: Upload artifacts
+        if: success() && matrix.label == 'macos-intel'
+        uses: actions/upload-artifact@v4
+        with:
+          name: tauri-bundle-${{ matrix.label }}
+          path: src-tauri/target/x86_64-apple-darwin/release/bundle/
+
+      - name: Tauri build (Windows)
+        if: matrix.label == 'windows'
+        run: pnpm run tauri build
+
+      - name: Upload artifacts
+        if: success() && matrix.label == 'windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: tauri-bundle-${{ matrix.label }}
+          path: src-tauri/target/release/bundle/
