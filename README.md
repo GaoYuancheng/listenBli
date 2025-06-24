@@ -27,12 +27,20 @@
 
 3. [ ] 播放时根据歌曲名自动加载对应歌词 .lrc 文件
 4. [ ] 支持自定义 歌词颜色/字体大小/字体样式
-5. [ ] 根据歌曲名自动联网获取歌词
+5. [ ] 使用脚本在指定目录一键下载歌曲
 
 ### 歌词 和 音乐 下载
 
 - [小梦音乐下载](https://zhaoxirj.cn/764.html)
 - [歌词下载](https://github.com/real-zony/ZonyLrcToolsX)
+
+```
+  // https://docs.myzony.com/#/lyrics_download
+  ./ZonyLrcTools.Cli download -l -d ..\CloudMusicDownload\
+
+```
+
+- [NeteaseCloudMusicApi(RUST 版本)](https://github.com/ToeSoft/NeteaseCloudMusicApi)
 
 ### 问题记录
 
