@@ -43,7 +43,10 @@ function TimeGreeting() {
 export default function Home() {
   const [greeted, setGreeted] = useState<string | null>(null);
   const greet = useCallback((): void => {
-    invoke<string>("greet")
+    invoke<string>("greet", {
+      nameAa: "张三",
+      age: 18,
+    })
       .then((s) => {
         setGreeted(s);
       })
@@ -129,6 +132,15 @@ export default function Home() {
               <span className="ml-2 text-sm text-gray-500">
                 - 彩色粒子/眩光/酷炫动画，点击画布可刷新特效
               </span>
+            </li>
+            <li className="mb-2">
+              <Link
+                href="/music"
+                className="text-blue-500 hover:underline font-semibold"
+              >
+                进入音乐播放页
+              </Link>
+              <span className="ml-2 text-sm text-gray-500">-</span>
             </li>
           </ul>
         </div>

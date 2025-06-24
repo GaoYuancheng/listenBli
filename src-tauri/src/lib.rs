@@ -1,11 +1,17 @@
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-use std::time::{SystemTime, UNIX_EPOCH};
 use serde::{Deserialize, Serialize};
+use tauri::ipc::Response;
+use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::{window::Color, Manager, WebviewUrl, WebviewWindowBuilder};
 mod user;
+use std::fs;
+use std::path::Path;
+// use uuid::Uuid;
+// use std::env::temp_dir;
 
 #[tauri::command]
-fn greet() -> String {
+fn greet(name_aa: String, age: u32) -> String {
+  println!("greet ~ params: {}, {}", name_aa, age);
   let now = SystemTime::now();
   let epoch_ms = now.duration_since(UNIX_EPOCH).unwrap().as_millis();
   let res = format!("Hello world from Rust! Current epoch: {}", epoch_ms);
@@ -24,14 +30,14 @@ async fn create_lyrics_window(app_handle: tauri::AppHandle) -> Result<(), String
   // 创建新窗口
   let lyrics_window = WebviewWindowBuilder::new(
     &app_handle,
-    "lyrics-window", // 唯一标识符
-    WebviewUrl::App("lyrics/external".into()) // 指向一个新的页面路径
+    "lyrics-window",                           // 唯一标识符
+    WebviewUrl::App("lyrics/external".into()), // 指向一个新的页面路径
   )
   .title("桌面歌词")
   .inner_size(400.0, 150.0)
   .decorations(false) // 无边框窗口
   .transparent(true) // 支持透明背景
-  .background_color(Color(0,0,0,0)) // 设置透明背景色 (ARGB: 00 00 00 00)
+  .background_color(Color(0, 0, 0, 0)) // 设置透明背景色 (ARGB: 00 00 00 00)
   .always_on_top(true) // 始终置顶
   .skip_taskbar(true) // 不在任务栏显示
   .devtools(true) // 生产环境关闭开发者工具
@@ -64,25 +70,60 @@ async fn is_lyrics_window_open(app_handle: tauri::AppHandle) -> Result<bool, Str
 }
 
 #[tauri::command]
-async fn get_lyrics(song_name: String) -> Result<String, String> {
+fn scan_music_files(dirs: Vec<String>) -> Vec<serde_json::Value> {
+  let mut files = vec![];
+  for dir in dirs {
+    if let Ok(entries) = fs::read_dir(&dir) {
+      for entry in entries.flatten() {
+        let path = entry.path();
+        if let Some(ext) = path.extension() {
+          if ext == "mp3" || ext == "flac" {
+            let file_path = path.to_string_lossy().to_string();
+            let file_name = path.file_name()
+                .and_then(|name| name.to_str())
+                .unwrap_or("未知文件名")
+                .to_string();
+            
+            let file_obj = serde_json::json!({
+              "name": file_name,
+              "path": file_path
+            });
+            
+            files.push(file_obj);
+          }
+        }
+      }
+    }
+  }
+  files
+}
+
+#[tauri::command]
+fn get_lyrics(song_path: String) -> String {
+  let lrc_path = Path::new(&song_path).with_extension("lrc");
+  fs::read_to_string(&lrc_path).unwrap_or_else(|_| "暂无歌词".to_string())
+}
+
+#[tauri::command]
+async fn get_mock_lyrics(song_name: String) -> Result<String, String> {
   // 这里使用示例API，实际应用中应替换为真实的API
   // let url = format!("https://api.example.com/lyrics?song={}", song_name);
-  
+
   // 由于这只是示例，我们返回模拟数据
   // 在实际应用中，您应该替换这部分代码为真实的API调用
   // 例如：
   // let response = reqwest::get(&url).await.map_err(|e| e.to_string())?;
   // let lyrics_data: LyricsResponse = response.json().await.map_err(|e| e.to_string())?;
-  // 
+  //
   // if !lyrics_data.status {
   //     return Err(lyrics_data.message.unwrap_or_else(|| "获取歌词失败".to_string()));
   // }
-  // 
+  //
   // match lyrics_data.data {
   //     Some(data) => Ok(data.lrc),
   //     None => Err("未找到歌词数据".to_string()),
   // }
-  
+
   // 生成模拟LRC格式歌词
   let mock_lrc = format!(
     r#"[00:00.00]{} - 歌词
@@ -148,8 +189,16 @@ async fn get_lyrics(song_name: String) -> Result<String, String> {
 "#,
     song_name
   );
-  
+
   Ok(mock_lrc)
+}
+
+
+#[tauri::command]
+async fn get_song_file(song_path: String) -> Response {
+    // 读取文件内容
+    let content = std::fs::read(&song_path).unwrap();
+    tauri::ipc::Response::new(content)
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -167,13 +216,17 @@ struct LyricsData {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
   tauri::Builder::default()
+    .plugin(tauri_plugin_dialog::init())
     .plugin(tauri_plugin_opener::init())
     .invoke_handler(tauri::generate_handler![
-      greet, 
+      greet,
       get_lyrics,
       create_lyrics_window,
       close_lyrics_window,
       is_lyrics_window_open,
+      scan_music_files,
+      get_mock_lyrics,
+      get_song_file,
       user::get_current_username
     ])
     .run(tauri::generate_context!())

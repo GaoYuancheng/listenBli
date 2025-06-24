@@ -29,6 +29,11 @@
 4. [ ] 支持自定义 歌词颜色/字体大小/字体样式
 5. [ ] 根据歌曲名自动联网获取歌词
 
+### 歌词 和 音乐 下载
+
+- [小梦音乐下载](https://zhaoxirj.cn/764.html)
+- [歌词下载](https://github.com/real-zony/ZonyLrcToolsX)
+
 ### 问题记录
 
 #### 1. 无法打开新窗口
@@ -60,3 +65,20 @@ Download https://github.com/tauri-apps/nsis-tauri-utils/releases/download/nsis_t
 使用 github actions 在 github 提供的对应环境中打出 macOS/Linux/Windows 包
 
 详见 .github/workflows/tauri-build.yml
+
+#### 6. 读取文件并且返回二进制给前端 设置 content-type
+
+plugin:fs 无法使用 会有 forbidden path
+已经在 capabilities/default.json 下添加权限 但是不管用
+
+```rust
+
+#[tauri::command]
+async fn get_song_file(song_path: String) -> Response {
+    // 读取文件内容
+    let content = std::fs::read(&song_path).unwrap();
+    // 返回二进制给前端 content-type: application/octet-stream
+    tauri::ipc::Response::new(content)
+}
+
+```
