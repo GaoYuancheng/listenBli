@@ -1,8 +1,10 @@
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 use serde::{Deserialize, Serialize};
-use tauri::ipc::Response;
 use std::time::{SystemTime, UNIX_EPOCH};
+use tauri::ipc::Response;
 use tauri::{window::Color, Manager, WebviewUrl, WebviewWindowBuilder};
+use tauri_plugin_store::StoreExt;
+use serde_json::json;
 mod user;
 use std::fs;
 use std::path::Path;
@@ -79,16 +81,17 @@ fn scan_music_files(dirs: Vec<String>) -> Vec<serde_json::Value> {
         if let Some(ext) = path.extension() {
           if ext == "mp3" || ext == "flac" {
             let file_path = path.to_string_lossy().to_string();
-            let file_name = path.file_name()
-                .and_then(|name| name.to_str())
-                .unwrap_or("未知文件名")
-                .to_string();
-            
+            let file_name = path
+              .file_name()
+              .and_then(|name| name.to_str())
+              .unwrap_or("未知文件名")
+              .to_string();
+
             let file_obj = serde_json::json!({
               "name": file_name,
               "path": file_path
             });
-            
+
             files.push(file_obj);
           }
         }
@@ -193,12 +196,11 @@ async fn get_mock_lyrics(song_name: String) -> Result<String, String> {
   Ok(mock_lrc)
 }
 
-
 #[tauri::command]
 async fn get_song_file(song_path: String) -> Response {
-    // 读取文件内容
-    let content = std::fs::read(&song_path).unwrap();
-    tauri::ipc::Response::new(content)
+  // 读取文件内容
+  let content = std::fs::read(&song_path).unwrap();
+  tauri::ipc::Response::new(content)
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -213,9 +215,31 @@ struct LyricsData {
   lrc: String,
 }
 
+#[tauri::command]
+async fn save_music_dirs(app_handle: tauri::AppHandle, dirs: Vec<String>) -> Result<(), String> {
+    let store = app_handle.store("music-settings.json").map_err(|e| e.to_string())?;
+    store.set("music_dirs".to_string(), json!(dirs));
+    Ok(())
+}
+
+#[tauri::command]
+async fn load_music_dirs(app_handle: tauri::AppHandle) -> Result<Vec<String>, String> {
+    let store = app_handle.store("music-settings.json").map_err(|e| e.to_string())?;
+    let dirs_value = store.get("music_dirs".to_string());
+    
+    match dirs_value {
+        Some(value) => {
+            let dirs: Vec<String> = serde_json::from_value(value).map_err(|e| e.to_string())?;
+            Ok(dirs)
+        }
+        None => Ok(vec![]),
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
   tauri::Builder::default()
+    .plugin(tauri_plugin_store::Builder::default().build())
     .plugin(tauri_plugin_dialog::init())
     .plugin(tauri_plugin_opener::init())
     .invoke_handler(tauri::generate_handler![
@@ -227,7 +251,9 @@ pub fn run() {
       scan_music_files,
       get_mock_lyrics,
       get_song_file,
-      user::get_current_username
+      user::get_current_username,
+      save_music_dirs,
+      load_music_dirs
     ])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");

@@ -1,8 +1,8 @@
 "use client";
-import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
+import DirectoryModal from "./components/DirectoryModal";
 
 interface MusicFile {
   name: string;
@@ -17,28 +17,28 @@ export default function MusicPage() {
   const [loopMode, setLoopMode] = useState<"single" | "list">("list");
   const audioRef = useRef<HTMLAudioElement>(null);
   const [audioSrc, setAudioSrc] = useState<string | undefined>(undefined);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // 选择目录
-  const handleSelectDirs = async () => {
+  // 初始化：加载本地保存的目录
+  const initMusicDirs = async () => {
     try {
-      const selected = await open({ multiple: true, directory: true });
-      let dirs: string[] = [];
-      if (typeof selected === "string") {
-        dirs = [selected];
-      } else if (
-        Array.isArray(selected) &&
-        selected.every((item) => typeof item === "string")
-      ) {
-        dirs = selected;
-      }
-      if (dirs.length > 0) {
-        setMusicDirs(dirs);
-        const files = await invoke<MusicFile[]>("scan_music_files", { dirs });
+      const savedDirs = await invoke<string[]>("load_music_dirs");
+      if (savedDirs.length > 0) {
+        setMusicDirs(savedDirs);
+        const files = await invoke<MusicFile[]>("scan_music_files", {
+          dirs: savedDirs,
+        });
         setMusicFiles(files);
       }
     } catch (e: unknown) {
-      console.error("选择目录出错", String(e));
+      console.error("加载本地目录失败", String(e));
     }
+  };
+
+  // 处理目录变更
+  const handleDirectoriesChange = (dirs: string[], files: MusicFile[]) => {
+    setMusicDirs(dirs);
+    setMusicFiles(files);
   };
 
   // 播放
@@ -57,6 +57,7 @@ export default function MusicPage() {
 
       audioRef.current!.src = currentBlobUrl;
       await audioRef.current!.play();
+      setIsPlaying(true);
     } catch (e) {
       console.error("获取歌曲文件失败", e);
     }
@@ -71,17 +72,17 @@ export default function MusicPage() {
   // 上一曲
   const handlePrev = () => {
     if (musicFiles.length === 0) return;
-    setCurrentIndex(
-      (prev) => (prev - 1 + musicFiles.length) % musicFiles.length
-    );
-    setIsPlaying(true);
+    const newIndex = (currentIndex - 1 + musicFiles.length) % musicFiles.length;
+    setCurrentIndex(newIndex);
+    void handlePlay(newIndex);
   };
 
   // 下一曲
   const handleNext = () => {
     if (musicFiles.length === 0) return;
-    setCurrentIndex((prev) => (prev + 1) % musicFiles.length);
-    setIsPlaying(true);
+    const newIndex = (currentIndex + 1) % musicFiles.length;
+    setCurrentIndex(newIndex);
+    void handlePlay(newIndex);
   };
 
   // 切换循环模式
@@ -93,20 +94,13 @@ export default function MusicPage() {
   const openLyrics = async () => {
     if (currentIndex < 0) return;
     await invoke("create_lyrics_window");
-    await invoke("get_lyrics", { song_path: musicFiles[currentIndex] });
+    await invoke("get_lyrics", { song_path: musicFiles[currentIndex].path });
   };
 
-  // const init = async () => {
-  //   setMusicDirs([`E:\\CloudMusicDownload`]);
-  //   const files = await invoke<MusicFile[]>("scan_music_files", {
-  //     dirs: [`E:\\CloudMusicDownload`],
-  //   });
-  //   setMusicFiles(files);
-  // };
-
-  // useEffect(() => {
-  //   void init();
-  // }, []);
+  // 页面初始化时加载本地保存的目录
+  useEffect(() => {
+    void initMusicDirs();
+  }, []);
 
   console.log(" MusicPage ~ musicFiles:", musicFiles, audioSrc);
   return (
@@ -118,51 +112,115 @@ export default function MusicPage() {
           </button>
         </Link>
       </div>
-      <button onClick={handleSelectDirs}>选择音乐目录</button>
-      <ul>
-        {musicFiles.map((file, idx) => (
-          <li
-            key={file.name}
-            className="flex justify-between items-center group hover:bg-gray-100 px-2 py-1"
+
+      {/* 目录管理区域 */}
+      <div className="mb-6">
+        <div className="flex items-center gap-4 mb-4">
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
           >
-            <span>{file.name}</span>
-            <button
-              className="opacity-0 group-hover:opacity-100 transition"
-              onClick={() => {
-                void handlePlay(idx);
-              }}
-            >
-              ▶️ 播放
-            </button>
-          </li>
-        ))}
-      </ul>
-      <div className="mt-4 flex items-center gap-2">
-        <button onClick={handlePrev}>上一曲</button>
+            管理音乐目录
+          </button>
+          <span className="text-sm text-gray-600">
+            已添加 {musicDirs.length} 个目录，共 {musicFiles.length} 首音乐
+          </span>
+        </div>
+      </div>
+
+      {/* 音乐列表 */}
+      <div className="mb-4">
+        <h3 className="text-lg font-medium mb-2">音乐列表</h3>
+        {musicFiles.length === 0 ? (
+          <p className="text-gray-500">暂无音乐文件，请先添加音乐目录</p>
+        ) : (
+          <ul className="space-y-1">
+            {musicFiles.map((file, idx) => (
+              <li
+                key={file.name}
+                className={`flex justify-between items-center group hover:bg-gray-100 px-3 py-2 rounded ${
+                  currentIndex === idx
+                    ? "bg-blue-50 border-l-4 border-blue-500"
+                    : ""
+                }`}
+              >
+                <span className="truncate flex-1">{file.name}</span>
+                <button
+                  className="opacity-0 group-hover:opacity-100 transition-opacity px-2 py-1 text-sm bg-green-500 text-white rounded hover:bg-green-600"
+                  onClick={() => {
+                    handlePlay(idx);
+                  }}
+                >
+                  {currentIndex === idx && isPlaying ? "⏸️" : "▶️"} 播放
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      {/* 播放控制 */}
+      <div className="mt-6 flex items-center gap-2 flex-wrap">
+        <button
+          onClick={handlePrev}
+          disabled={musicFiles.length === 0}
+          className="px-3 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          上一曲
+        </button>
         <button
           onClick={
             isPlaying
               ? handlePause
               : () => {
-                  void handlePlay(currentIndex);
+                  if (currentIndex >= 0) {
+                    void handlePlay(currentIndex);
+                  }
                 }
           }
+          disabled={musicFiles.length === 0}
+          className="px-3 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {isPlaying ? "暂停" : "播放"}
+          {isPlaying ? "⏸️ 暂停" : "▶️ 播放"}
         </button>
-        <button onClick={handleNext}>下一曲</button>
-        <button onClick={toggleLoopMode}>
+        <button
+          onClick={handleNext}
+          disabled={musicFiles.length === 0}
+          className="px-3 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          下一曲
+        </button>
+        <button
+          onClick={toggleLoopMode}
+          className="px-3 py-2 bg-purple-500 text-white rounded hover:bg-purple-600"
+        >
           {loopMode === "single" ? "单曲循环" : "列表循环"}
         </button>
-        <button onClick={openLyrics}>桌面歌词</button>
+        <button
+          onClick={openLyrics}
+          disabled={currentIndex < 0}
+          className="px-3 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          桌面歌词
+        </button>
       </div>
+
       <audio
         ref={audioRef}
         autoPlay={isPlaying}
         loop={loopMode === "single"}
         onEnded={loopMode === "list" ? handleNext : undefined}
-        className="w-full mt-2"
+        className="w-full mt-4"
         controls
+      />
+
+      {/* 目录管理弹窗 */}
+      <DirectoryModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onDirectoriesChange={handleDirectoriesChange}
+        currentDirs={musicDirs}
+        currentFiles={musicFiles}
       />
     </div>
   );
