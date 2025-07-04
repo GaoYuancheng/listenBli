@@ -6,8 +6,8 @@
 
 - [Tauri2](https://v2.tauri.app/)
 - [Next.js15](https://nextjs.org/)
-- [`create tauri-app`](https://v2.tauri.app/start/create-project/)
-- [`pnpm`](https://pnpm.io/)
+- [create tauri-app](https://v2.tauri.app/start/create-project/)
+- [pnpm](https://pnpm.io/)
 - [App Router](https://nextjs.org/docs/app)
 - [TailwindCSS 4](https://tailwindcss.com/)
 - [Rust](https://www.rust-lang.org/)
@@ -15,11 +15,11 @@
 
 ### TODO
 
-1. [ ] 加载指定目录音乐文件 .mp3/.flac ...
+1. [x] 加载指定目录音乐文件 .mp3/.flac ...
 
 - 目录缓存到本地 持久生效
 
-2. [ ] 歌曲列表页
+2. 歌曲列表页
 
 - 支持搜索/排序/过滤
 - 支持播放/暂停/上一首/下一首

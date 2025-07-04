@@ -102,8 +102,10 @@ fn scan_music_files(dirs: Vec<String>) -> Vec<serde_json::Value> {
 }
 
 #[tauri::command]
-fn get_lyrics(song_path: String) -> String {
-  let lrc_path = Path::new(&song_path).with_extension("lrc");
+async fn get_lyrics(song_name: String) -> String {
+  println!("get_lyrics ~ song_name: {}", song_name);
+  let lrc_path = Path::new(&song_name).with_extension("lrc");
+  println!("歌词路径: {:?}", lrc_path);
   fs::read_to_string(&lrc_path).unwrap_or_else(|_| "暂无歌词".to_string())
 }
 
@@ -198,7 +200,7 @@ async fn get_mock_lyrics(song_name: String) -> Result<String, String> {
 
 #[tauri::command]
 async fn get_song_file(song_path: String) -> Response {
-  // 读取文件内容
+  // 读取文件内容 
   let content = std::fs::read(&song_path).unwrap();
   tauri::ipc::Response::new(content)
 }

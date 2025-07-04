@@ -2,6 +2,7 @@
 import { LyricLine, parseLrc } from "@/utils/lrc";
 import { invoke } from "@tauri-apps/api/core";
 import { useState, useEffect, useRef } from "react";
+import { listen } from "@tauri-apps/api/event";
 
 const globalCurrentTime = 0;
 
@@ -66,38 +67,8 @@ export default function ExternalLyricsPage() {
 
   // 切换播放/暂停
   const togglePlayPause = () => {
-    if (isPlaying && timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    } else if (!isPlaying) {
-      timerRef.current = setInterval(() => {
-        setCurrentTime((prev) => {
-          const newTime = prev + 0.1;
-
-          // 检查是否播放完成
-          if (
-            lyrics.length > 0 &&
-            newTime >= lyrics[lyrics.length - 1].time + 2
-          ) {
-            // 如果启用了循环播放，则重新开始
-            if (isLoopEnabled) {
-              return 0;
-            } else {
-              // 否则停止播放
-              if (timerRef.current) {
-                clearInterval(timerRef.current);
-                timerRef.current = null;
-              }
-              setIsPlaying(false);
-              return prev;
-            }
-          }
-
-          return newTime;
-        });
-      }, 100);
-    }
-    setIsPlaying(!isPlaying);
+    // 只切换 isPlaying 状态，不再用 setInterval 推进 currentTime
+    setIsPlaying((prev) => !prev);
   };
 
   // 重置播放
@@ -123,9 +94,11 @@ export default function ExternalLyricsPage() {
 
   // 获取歌词的函数
   const fetchLyrics = async (name: string) => {
+    console.log(" fetchLyrics ~ name:", name);
     try {
       // 调用Rust后端函数获取歌词
       const lrcData = await invoke<string>("get_lyrics", { songName: name });
+      console.log(" fetchLyrics ~ lrcData:", lrcData);
 
       // 解析LRC格式歌词
       const parsedLyrics = parseLrc(lrcData);
@@ -168,7 +141,20 @@ export default function ExternalLyricsPage() {
   }, []);
 
   useEffect(() => {
-    void fetchLyrics("园游会");
+    void fetchLyrics("E:\\CloudMusicDownload\\周杰伦 - 园游会");
+  }, []);
+
+  // 监听主窗口发来的播放进度
+  useEffect(() => {
+    let unlisten: (() => void) | undefined;
+    void listen<{ currentTime: number }>("music_progress", (event) => {
+      setCurrentTime(event.payload.currentTime);
+    }).then((fn) => {
+      unlisten = fn;
+    });
+    return () => {
+      if (unlisten) unlisten();
+    };
   }, []);
 
   // 处理鼠标进入

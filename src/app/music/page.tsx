@@ -3,6 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import DirectoryModal from "./components/DirectoryModal";
+import { emit } from "@tauri-apps/api/event";
 
 interface MusicFile {
   name: string;
@@ -16,7 +17,6 @@ export default function MusicPage() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [loopMode, setLoopMode] = useState<"single" | "list">("list");
   const audioRef = useRef<HTMLAudioElement>(null);
-  const [audioSrc, setAudioSrc] = useState<string | undefined>(undefined);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // 初始化：加载本地保存的目录
@@ -92,9 +92,9 @@ export default function MusicPage() {
 
   // 打开桌面歌词
   const openLyrics = async () => {
+    console.log(musicFiles[currentIndex].path);
     if (currentIndex < 0) return;
     await invoke("create_lyrics_window");
-    await invoke("get_lyrics", { song_path: musicFiles[currentIndex].path });
   };
 
   // 页面初始化时加载本地保存的目录
@@ -102,7 +102,21 @@ export default function MusicPage() {
     void initMusicDirs();
   }, []);
 
-  console.log(" MusicPage ~ musicFiles:", musicFiles, audioSrc);
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    const handleTimeUpdate = () => {
+      void emit("music_progress", { currentTime: audio.currentTime });
+    };
+
+    audio.addEventListener("timeupdate", handleTimeUpdate);
+
+    return () => {
+      audio.removeEventListener("timeupdate", handleTimeUpdate);
+    };
+  }, [audioRef]);
+
   return (
     <div className="p-6">
       <div className="mb-4">
@@ -117,7 +131,9 @@ export default function MusicPage() {
       <div className="mb-6">
         <div className="flex items-center gap-4 mb-4">
           <button
-            onClick={() => setIsModalOpen(true)}
+            onClick={() => {
+              setIsModalOpen(true);
+            }}
             className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
           >
             管理音乐目录
@@ -148,7 +164,7 @@ export default function MusicPage() {
                 <button
                   className="opacity-0 group-hover:opacity-100 transition-opacity px-2 py-1 text-sm bg-green-500 text-white rounded hover:bg-green-600"
                   onClick={() => {
-                    handlePlay(idx);
+                    void handlePlay(idx);
                   }}
                 >
                   {currentIndex === idx && isPlaying ? "⏸️" : "▶️"} 播放
@@ -217,7 +233,9 @@ export default function MusicPage() {
       {/* 目录管理弹窗 */}
       <DirectoryModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={() => {
+          setIsModalOpen(false);
+        }}
         onDirectoriesChange={handleDirectoriesChange}
         currentDirs={musicDirs}
         currentFiles={musicFiles}
