@@ -3,6 +3,7 @@ import { LyricLine, parseLrc } from "@/utils/lrc";
 import { invoke } from "@tauri-apps/api/core";
 import { useState, useEffect, useRef } from "react";
 import { listen } from "@tauri-apps/api/event";
+import { MusicFile } from "@/utils";
 
 const globalCurrentTime = 0;
 
@@ -14,6 +15,7 @@ export default function ExternalLyricsPage() {
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [isLoopEnabled, setIsLoopEnabled] = useState<boolean>(true);
   const [isHovered, setIsHovered] = useState<boolean>(false);
+  // const [currentFile, setCurrentFile] = useState<MusicFile | null>(null);
   const windowRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const hoverTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -93,15 +95,15 @@ export default function ExternalLyricsPage() {
   };
 
   // 获取歌词的函数
-  const fetchLyrics = async (name: string) => {
-    console.log(" fetchLyrics ~ name:", name);
+  const fetchLyrics = async (path: string) => {
+    console.log(" fetchLyrics ~ fetchLyrics:", fetchLyrics);
     try {
       // 调用Rust后端函数获取歌词
-      const lrcData = await invoke<string>("get_lyrics", { songName: name });
-      console.log(" fetchLyrics ~ lrcData:", lrcData);
+      const lrcData = await invoke<string>("get_lyrics", { songPath: path });
 
       // 解析LRC格式歌词
       const parsedLyrics = parseLrc(lrcData);
+      console.log(" fetchLyrics ~ parsedLyrics:", parsedLyrics);
       setLyrics(parsedLyrics);
 
       // 更新当前行索引
@@ -127,6 +129,7 @@ export default function ExternalLyricsPage() {
     const newIndex = getCurrentLineIndex(currentTime, lyrics);
     setCurrentLineIndex(newIndex);
   }, [currentTime, lyrics]);
+  console.log(" ExternalLyricsPage ~ currentTime:", currentTime);
 
   // 组件卸载时清理定时器
   useEffect(() => {
@@ -140,20 +143,31 @@ export default function ExternalLyricsPage() {
     };
   }, []);
 
-  useEffect(() => {
-    void fetchLyrics("E:\\CloudMusicDownload\\周杰伦 - 园游会");
-  }, []);
+  // useEffect(() => {
+  //   void fetchLyrics("E:\\CloudMusicDownload\\周杰伦 - 园游会");
+  // }, []);
 
   // 监听主窗口发来的播放进度
   useEffect(() => {
-    let unlisten: (() => void) | undefined;
+    let unlisten1: (() => void) | undefined;
+    let unlisten2: (() => void) | undefined;
+    console.log(" useEffect ~ unlisten2:", unlisten2);
     void listen<{ currentTime: number }>("music_progress", (event) => {
       setCurrentTime(event.payload.currentTime);
     }).then((fn) => {
-      unlisten = fn;
+      unlisten1 = fn;
     });
+
+    void listen<{ musicFile: MusicFile }>("music_info", (event) => {
+      const { name, path } = event.payload.musicFile;
+      void fetchLyrics(path);
+    }).then((fn) => {
+      unlisten2 = fn;
+    });
+
     return () => {
-      if (unlisten) unlisten();
+      if (unlisten1) unlisten1();
+      if (unlisten2) unlisten2();
     };
   }, []);
 

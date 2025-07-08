@@ -102,10 +102,17 @@ fn scan_music_files(dirs: Vec<String>) -> Vec<serde_json::Value> {
 }
 
 #[tauri::command]
-async fn get_lyrics(song_name: String) -> String {
-  println!("get_lyrics ~ song_name: {}", song_name);
-  let lrc_path = Path::new(&song_name).with_extension("lrc");
-  println!("歌词路径: {:?}", lrc_path);
+async fn get_lyrics(song_path: String) -> String {
+  // 先检查是否已经是.lrc后缀
+  let path = Path::new(&song_path);
+  let lrc_path = if path.extension().map_or(false, |ext| ext == "lrc") {
+    path.to_path_buf()
+  } else {
+    // 不是.lrc后缀，则修改为.lrc
+    path.with_extension("lrc")
+  };
+  println!("get_lyrics ~ lrc_path: {}", lrc_path.to_string_lossy());
+
   fs::read_to_string(&lrc_path).unwrap_or_else(|_| "暂无歌词".to_string())
 }
 

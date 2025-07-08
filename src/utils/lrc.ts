@@ -3,6 +3,11 @@ export interface LyricLine {
   text: string;
 }
 
+export interface MusicFile {
+  name: string;
+  path: string;
+}
+
 // 解析LRC格式歌词的函数
 export function parseLrc(lrc: string): LyricLine[] {
   const lines = lrc.split("\n");

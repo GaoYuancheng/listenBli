@@ -4,11 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import DirectoryModal from "./components/DirectoryModal";
 import { emit } from "@tauri-apps/api/event";
-
-interface MusicFile {
-  name: string;
-  path: string;
-}
+import { MusicFile } from "@/utils";
 
 export default function MusicPage() {
   const [musicDirs, setMusicDirs] = useState<string[]>([]);
@@ -44,7 +40,11 @@ export default function MusicPage() {
   // 播放
   const handlePlay = async (idx: number) => {
     setCurrentIndex(idx);
-    const { path, name } = musicFiles[idx];
+    const musicFile = musicFiles[idx];
+    void emit("music_info", { musicFile });
+    console.log(" handlePlay ~ handlePlay:", musicFile);
+
+    const { name, path } = musicFile;
 
     try {
       const fileContent = await invoke<string>("get_song_file", {
@@ -92,8 +92,6 @@ export default function MusicPage() {
 
   // 打开桌面歌词
   const openLyrics = async () => {
-    console.log(musicFiles[currentIndex].path);
-    if (currentIndex < 0) return;
     await invoke("create_lyrics_window");
   };
 
@@ -116,6 +114,8 @@ export default function MusicPage() {
       audio.removeEventListener("timeupdate", handleTimeUpdate);
     };
   }, [audioRef]);
+
+  // 通知桌面歌词
 
   return (
     <div className="p-6">
@@ -214,7 +214,6 @@ export default function MusicPage() {
         </button>
         <button
           onClick={openLyrics}
-          disabled={currentIndex < 0}
           className="px-3 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           桌面歌词
