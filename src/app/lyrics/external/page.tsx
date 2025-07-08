@@ -96,14 +96,12 @@ export default function ExternalLyricsPage() {
 
   // 获取歌词的函数
   const fetchLyrics = async (path: string) => {
-    console.log(" fetchLyrics ~ fetchLyrics:", fetchLyrics);
     try {
       // 调用Rust后端函数获取歌词
       const lrcData = await invoke<string>("get_lyrics", { songPath: path });
 
       // 解析LRC格式歌词
       const parsedLyrics = parseLrc(lrcData);
-      console.log(" fetchLyrics ~ parsedLyrics:", parsedLyrics);
       setLyrics(parsedLyrics);
 
       // 更新当前行索引
@@ -129,7 +127,6 @@ export default function ExternalLyricsPage() {
     const newIndex = getCurrentLineIndex(currentTime, lyrics);
     setCurrentLineIndex(newIndex);
   }, [currentTime, lyrics]);
-  console.log(" ExternalLyricsPage ~ currentTime:", currentTime);
 
   // 组件卸载时清理定时器
   useEffect(() => {
@@ -143,15 +140,24 @@ export default function ExternalLyricsPage() {
     };
   }, []);
 
-  // useEffect(() => {
-  //   void fetchLyrics("E:\\CloudMusicDownload\\周杰伦 - 园游会");
-  // }, []);
+  const init = async () => {
+    // 获取当前播放的歌曲
+    const currentSong = await invoke<string>("get_current_song");
+    console.log(" ExternalLyricsPage ~ currentSong:", currentSong);
+    if (currentSong) {
+      void fetchLyrics(currentSong);
+    }
+  };
+
+  useEffect(() => {
+    void init();
+  }, []);
 
   // 监听主窗口发来的播放进度
   useEffect(() => {
     let unlisten1: (() => void) | undefined;
     let unlisten2: (() => void) | undefined;
-    console.log(" useEffect ~ unlisten2:", unlisten2);
+
     void listen<{ currentTime: number }>("music_progress", (event) => {
       setCurrentTime(event.payload.currentTime);
     }).then((fn) => {

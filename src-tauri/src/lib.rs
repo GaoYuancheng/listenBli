@@ -8,8 +8,12 @@ use serde_json::json;
 mod user;
 use std::fs;
 use std::path::Path;
+use std::sync::Mutex;
+use once_cell::sync::Lazy;
 // use uuid::Uuid;
 // use std::env::temp_dir;
+
+static CURRENT_SONG: Lazy<Mutex<Option<String>>> = Lazy::new(|| Mutex::new(None));
 
 #[tauri::command]
 fn greet(name_aa: String, age: u32) -> String {
@@ -207,7 +211,10 @@ async fn get_mock_lyrics(song_name: String) -> Result<String, String> {
 
 #[tauri::command]
 async fn get_song_file(song_path: String) -> Response {
-  // 读取文件内容 
+  {
+    let mut current = CURRENT_SONG.lock().unwrap();
+    *current = Some(song_path.clone());
+  }
   let content = std::fs::read(&song_path).unwrap();
   tauri::ipc::Response::new(content)
 }
@@ -245,6 +252,12 @@ async fn load_music_dirs(app_handle: tauri::AppHandle) -> Result<Vec<String>, St
     }
 }
 
+#[tauri::command]
+async fn get_current_song() -> Option<String> {
+  let current = CURRENT_SONG.lock().unwrap();
+  current.clone()
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
   tauri::Builder::default()
@@ -260,6 +273,7 @@ pub fn run() {
       scan_music_files,
       get_mock_lyrics,
       get_song_file,
+      get_current_song,
       user::get_current_username,
       save_music_dirs,
       load_music_dirs

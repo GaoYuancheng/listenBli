@@ -2045,6 +2045,7 @@ checksum = "6db9c683daf087dc577b7506e9695b3d556a9f3849903fa28186283afd6809e9"
 name = "listenBli"
 version = "0.1.0"
 dependencies = [
+ "once_cell",
  "regex",
  "reqwest 0.11.27",
  "serde",
