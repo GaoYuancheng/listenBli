@@ -102,6 +102,7 @@ export default function ExternalLyricsPage() {
 
       // 解析LRC格式歌词
       const parsedLyrics = parseLrc(lrcData);
+      console.log(" fetchLyrics ~ parsedLyrics:", parsedLyrics);
       setLyrics(parsedLyrics);
 
       // 更新当前行索引
@@ -159,6 +160,7 @@ export default function ExternalLyricsPage() {
     let unlisten2: (() => void) | undefined;
 
     void listen<{ currentTime: number }>("music_progress", (event) => {
+      console.log(" useEffect ~ music_progress:");
       setCurrentTime(event.payload.currentTime);
     }).then((fn) => {
       unlisten1 = fn;
@@ -184,7 +186,7 @@ export default function ExternalLyricsPage() {
     }
     setIsHovered(true);
   };
-
+  console.log("currentTime", currentTime);
   // 处理鼠标离开
   const handleMouseLeave = () => {
     if (hoverTimerRef.current) {

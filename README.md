@@ -28,6 +28,9 @@
 3. [ ] 播放时根据歌曲名自动加载对应歌词 .lrc 文件
 4. [ ] 支持自定义 歌词颜色/字体大小/字体样式
 5. [ ] 使用脚本在指定目录一键下载歌曲
+6. [ ] 退出时关闭桌面歌词窗口
+7. [ ] 桌面歌词窗口禁用最大化/最小化
+8. [ ] 音乐目录面板中的目录支持启用/禁用
 
 ### 歌词 和 音乐 下载
 
@@ -37,7 +40,7 @@
 ```
   // https://docs.myzony.com/#/lyrics_download
   ./ZonyLrcTools.Cli download -l -d ..\CloudMusicDownload\
-
+  ./ZonyLrcTools.Cli download -l -d ..\小梦音乐下载-新版\downLoad
 ```
 
 - [NeteaseCloudMusicApi(RUST 版本)](https://github.com/ToeSoft/NeteaseCloudMusicApi)

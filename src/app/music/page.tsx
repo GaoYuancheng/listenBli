@@ -118,18 +118,15 @@ export default function MusicPage() {
   // 通知桌面歌词
 
   return (
-    <div className="p-6">
-      <div className="mb-4">
-        <Link href="/">
-          <button className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-gray-800 transition-colors">
-            ← 返回首页
-          </button>
-        </Link>
-      </div>
-
+    <div className="p-6 flex flex-col h-lvh">
       {/* 目录管理区域 */}
-      <div className="mb-6">
-        <div className="flex items-center gap-4 mb-4">
+      <div className="mb-4">
+        <div className="flex items-center gap-4">
+          <Link href="/">
+            <button className="text-sm text-gray-600 hover:text-gray-800 transition-colors cursor-pointer">
+              ←
+            </button>
+          </Link>
           <button
             onClick={() => {
               setIsModalOpen(true);
@@ -138,6 +135,15 @@ export default function MusicPage() {
           >
             管理音乐目录
           </button>
+          {/* 此处新增刷新图标 点击调用 init */}
+          <button
+            onClick={() => {
+              void initMusicDirs();
+            }}
+            className="text-sm text-blue-600 hover:text-blue-800 transition-colors  cursor-pointer"
+          >
+            刷新
+          </button>
           <span className="text-sm text-gray-600">
             已添加 {musicDirs.length} 个目录，共 {musicFiles.length} 首音乐
           </span>
@@ -145,34 +151,36 @@ export default function MusicPage() {
       </div>
 
       {/* 音乐列表 */}
-      <div className="mb-4">
+      <div className="mb-4 flex flex-col flex-1 overflow-y-auto">
         <h3 className="text-lg font-medium mb-2">音乐列表</h3>
-        {musicFiles.length === 0 ? (
-          <p className="text-gray-500">暂无音乐文件，请先添加音乐目录</p>
-        ) : (
-          <ul className="space-y-1">
-            {musicFiles.map((file, idx) => (
-              <li
-                key={file.name}
-                className={`flex justify-between items-center group hover:bg-gray-100 px-3 py-2 rounded ${
-                  currentIndex === idx
-                    ? "bg-blue-50 border-l-4 border-blue-500"
-                    : ""
-                }`}
-              >
-                <span className="truncate flex-1">{file.name}</span>
-                <button
-                  className="opacity-0 group-hover:opacity-100 transition-opacity px-2 py-1 text-sm bg-green-500 text-white rounded hover:bg-green-600"
-                  onClick={() => {
-                    void handlePlay(idx);
-                  }}
+        <div className="flex-1 overflow-y-auto">
+          {musicFiles.length === 0 ? (
+            <p className="text-gray-500">暂无音乐文件，请先添加音乐目录</p>
+          ) : (
+            <ul className="space-y-1">
+              {musicFiles.map((file, idx) => (
+                <li
+                  key={file.name}
+                  className={`flex justify-between items-center group hover:bg-gray-100 px-3 py-2 rounded ${
+                    currentIndex === idx
+                      ? "bg-blue-50 border-l-4 border-blue-500"
+                      : ""
+                  }`}
                 >
-                  {currentIndex === idx && isPlaying ? "⏸️" : "▶️"} 播放
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
+                  <span className="truncate flex-1">{file.name}</span>
+                  <button
+                    className="opacity-0 group-hover:opacity-100 transition-opacity px-2 py-1 text-sm bg-green-500 text-white rounded hover:bg-green-600"
+                    onClick={() => {
+                      void handlePlay(idx);
+                    }}
+                  >
+                    {currentIndex === idx && isPlaying ? "⏸️" : "▶️"} 播放
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </div>
 
       {/* 播放控制 */}
