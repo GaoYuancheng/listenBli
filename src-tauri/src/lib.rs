@@ -1,15 +1,15 @@
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::ipc::Response;
 use tauri::{window::Color, Manager, WebviewUrl, WebviewWindowBuilder};
 use tauri_plugin_store::StoreExt;
-use serde_json::json;
 mod user;
+use once_cell::sync::Lazy;
 use std::fs;
 use std::path::Path;
 use std::sync::Mutex;
-use once_cell::sync::Lazy;
 // use uuid::Uuid;
 // use std::env::temp_dir;
 
@@ -233,23 +233,27 @@ struct LyricsData {
 
 #[tauri::command]
 async fn save_music_dirs(app_handle: tauri::AppHandle, dirs: Vec<String>) -> Result<(), String> {
-    let store = app_handle.store("music-settings.json").map_err(|e| e.to_string())?;
-    store.set("music_dirs".to_string(), json!(dirs));
-    Ok(())
+  let store = app_handle
+    .store("music-settings.json")
+    .map_err(|e| e.to_string())?;
+  store.set("music_dirs".to_string(), json!(dirs));
+  Ok(())
 }
 
 #[tauri::command]
 async fn load_music_dirs(app_handle: tauri::AppHandle) -> Result<Vec<String>, String> {
-    let store = app_handle.store("music-settings.json").map_err(|e| e.to_string())?;
-    let dirs_value = store.get("music_dirs".to_string());
-    
-    match dirs_value {
-        Some(value) => {
-            let dirs: Vec<String> = serde_json::from_value(value).map_err(|e| e.to_string())?;
-            Ok(dirs)
-        }
-        None => Ok(vec![]),
+  let store = app_handle
+    .store("music-settings.json")
+    .map_err(|e| e.to_string())?;
+  let dirs_value = store.get("music_dirs".to_string());
+
+  match dirs_value {
+    Some(value) => {
+      let dirs: Vec<String> = serde_json::from_value(value).map_err(|e| e.to_string())?;
+      Ok(dirs)
     }
+    None => Ok(vec![]),
+  }
 }
 
 #[tauri::command]
@@ -278,6 +282,26 @@ pub fn run() {
       save_music_dirs,
       load_music_dirs
     ])
+    .on_window_event(|window, event| {
+      // 监听窗口事件，当主窗口关闭时自动关闭桌面歌词窗口
+      if let tauri::WindowEvent::CloseRequested { .. } = event {
+        let window_label = window.label();
+
+        // 如果关闭的不是桌面歌词窗口，则关闭桌面歌词窗口
+        if window_label != "lyrics-window" {
+          println!(
+            "Window '{}' close requested, closing lyrics window...",
+            window_label
+          );
+
+          // 关闭桌面歌词窗口
+          if let Some(lyrics_window) = window.app_handle().get_webview_window("lyrics-window") {
+            let _ = lyrics_window.close();
+            println!("Lyrics window closed on app exit");
+          }
+        }
+      }
+    })
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
 }
