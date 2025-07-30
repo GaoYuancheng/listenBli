@@ -47,6 +47,8 @@ async fn create_lyrics_window(app_handle: tauri::AppHandle) -> Result<(), String
   .always_on_top(true) // 始终置顶
   .skip_taskbar(true) // 不在任务栏显示
   .devtools(true) // 生产环境关闭开发者工具
+  .resizable(false) // 禁用调整大小
+  .maximizable(false) // 禁用最大化
   .build()
   .map_err(|e| e.to_string())?;
 

@@ -44,6 +44,18 @@ export default function MusicPage() {
     void emit("music_info", { musicFile });
     console.log(" handlePlay ~ handlePlay:", musicFile);
 
+    // 如果是当前播放的歌曲
+    if (currentIndex === idx) {
+      if (isPlaying) {
+        audioRef.current?.pause();
+        setIsPlaying(false);
+      } else {
+        void audioRef.current?.play();
+        setIsPlaying(true);
+      }
+      return;
+    }
+
     const { name, path } = musicFile;
 
     try {
@@ -161,11 +173,14 @@ export default function MusicPage() {
               {musicFiles.map((file, idx) => (
                 <li
                   key={file.name}
-                  className={`flex justify-between items-center group hover:bg-gray-100 px-3 py-2 rounded ${
+                  className={`flex justify-between items-center group hover:bg-gray-100 px-3 py-2 rounded cursor-pointer ${
                     currentIndex === idx
                       ? "bg-blue-50 border-l-4 border-blue-500"
                       : ""
                   }`}
+                  onDoubleClick={() => {
+                    void handlePlay(idx);
+                  }}
                 >
                   <span className="truncate flex-1">{file.name}</span>
                   <button
@@ -174,7 +189,7 @@ export default function MusicPage() {
                       void handlePlay(idx);
                     }}
                   >
-                    {currentIndex === idx && isPlaying ? "⏸️" : "▶️"} 播放
+                    {currentIndex === idx && isPlaying ? "⏸️ 暂停" : "▶️ 播放"}
                   </button>
                 </li>
               ))}
