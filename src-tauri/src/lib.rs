@@ -10,6 +10,7 @@ use once_cell::sync::Lazy;
 use std::fs;
 use std::path::Path;
 use std::sync::Mutex;
+use tauri::{AppHandle, Emitter};
 // use uuid::Uuid;
 // use std::env::temp_dir;
 
@@ -264,6 +265,18 @@ async fn get_current_song() -> Option<String> {
   current.clone()
 }
 
+#[tauri::command]
+async fn toggle_play_pause(app_handle: AppHandle) -> Result<(), String> {
+  app_handle
+    .emit_to("main", "toggle_play_pause", serde_json::json!({}))
+    .expect("toggle_play_pause发送失败");
+  // 发送事件给主窗口，通知切换播放/暂停状态
+  // app_handle
+  //   .emit("toggle_play_pause", serde_json::json!({}))
+  //   .map_err(|e| e.to_string())?;
+  Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
   tauri::Builder::default()
@@ -280,6 +293,7 @@ pub fn run() {
       get_mock_lyrics,
       get_song_file,
       get_current_song,
+      toggle_play_pause,
       user::get_current_username,
       save_music_dirs,
       load_music_dirs

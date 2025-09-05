@@ -68,9 +68,16 @@ export default function ExternalLyricsPage() {
   };
 
   // 切换播放/暂停
-  const togglePlayPause = () => {
-    // 只切换 isPlaying 状态，不再用 setInterval 推进 currentTime
-    setIsPlaying((prev) => !prev);
+  const togglePlayPause = async () => {
+    try {
+      // 发送播放/暂停事件给主窗口
+      await invoke("toggle_play_pause");
+      console.log("桌面歌词窗口发送播放/暂停命令");
+      // 不在这里切换状态，而是等待主窗口的 playback_state 事件
+      // 这样确保桌面歌词窗口和主窗口状态同步
+    } catch (error) {
+      console.error("切换播放状态失败:", error);
+    }
   };
 
   // 重置播放
@@ -158,6 +165,7 @@ export default function ExternalLyricsPage() {
   useEffect(() => {
     let unlisten1: (() => void) | undefined;
     let unlisten2: (() => void) | undefined;
+    let unlisten3: (() => void) | undefined;
 
     void listen<{ currentTime: number }>("music_progress", (event) => {
       console.log(" useEffect ~ music_progress:");
@@ -173,9 +181,17 @@ export default function ExternalLyricsPage() {
       unlisten2 = fn;
     });
 
+    // 监听主播放器的播放状态变化
+    void listen<{ isPlaying: boolean }>("playback_state", (event) => {
+      setIsPlaying(event.payload.isPlaying);
+    }).then((fn) => {
+      unlisten3 = fn;
+    });
+
     return () => {
       if (unlisten1) unlisten1();
       if (unlisten2) unlisten2();
+      if (unlisten3) unlisten3();
     };
   }, []);
 

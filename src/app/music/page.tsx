@@ -3,7 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import DirectoryModal from "./components/DirectoryModal";
-import { emit } from "@tauri-apps/api/event";
+import { emit, listen } from "@tauri-apps/api/event";
 import { MusicFile } from "@/utils";
 
 export default function MusicPage() {
@@ -39,26 +39,28 @@ export default function MusicPage() {
 
   // 播放
   const handlePlay = async (idx: number) => {
-    setCurrentIndex(idx);
-    const musicFile = musicFiles[idx];
-    void emit("music_info", { musicFile });
-    console.log(" handlePlay ~ handlePlay:", musicFile);
-
     // 如果是当前播放的歌曲
     if (currentIndex === idx) {
       if (isPlaying) {
         audioRef.current?.pause();
         setIsPlaying(false);
+        void emit("playback_state", { isPlaying: false });
       } else {
         void audioRef.current?.play();
         setIsPlaying(true);
+        void emit("playback_state", { isPlaying: true });
       }
+      setCurrentIndex(idx);
       return;
     }
 
-    const { name, path } = musicFile;
-
     try {
+      const musicFile = musicFiles[idx];
+      void emit("music_info", { musicFile });
+      console.log(" handlePlay ~ handlePlay:", musicFile);
+
+      const { name, path } = musicFile;
+      setCurrentIndex(idx);
       const fileContent = await invoke<string>("get_song_file", {
         songPath: path,
       });
@@ -70,6 +72,7 @@ export default function MusicPage() {
       audioRef.current!.src = currentBlobUrl;
       await audioRef.current!.play();
       setIsPlaying(true);
+      void emit("playback_state", { isPlaying: true });
     } catch (e) {
       console.error("获取歌曲文件失败", e);
     }
@@ -79,6 +82,7 @@ export default function MusicPage() {
   const handlePause = () => {
     setIsPlaying(false);
     audioRef.current?.pause();
+    void emit("playback_state", { isPlaying: false });
   };
 
   // 上一曲
@@ -126,6 +130,27 @@ export default function MusicPage() {
       audio.removeEventListener("timeupdate", handleTimeUpdate);
     };
   }, [audioRef]);
+
+  // 监听桌面歌词窗口的播放/暂停控制
+  useEffect(() => {
+    let unlisten: (() => void) | undefined;
+    void listen("toggle_play_pause", () => {
+      console.log("🚀 ~ MusicPage ~ toggle_play_pause:");
+      if (currentIndex >= 0) {
+        if (isPlaying) {
+          handlePause();
+        } else {
+          void handlePlay(currentIndex);
+        }
+      }
+    }).then((fn) => {
+      unlisten = fn;
+    });
+
+    return () => {
+      if (unlisten) unlisten();
+    };
+  }, [currentIndex, isPlaying]);
 
   // 通知桌面歌词
 
