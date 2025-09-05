@@ -15,6 +15,7 @@ export default function ExternalLyricsPage() {
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [isLoopEnabled, setIsLoopEnabled] = useState<boolean>(true);
   const [isHovered, setIsHovered] = useState<boolean>(false);
+  const [timeOffset, setTimeOffset] = useState<number>(0); // 歌词时间偏移量，单位：秒
   // const [currentFile, setCurrentFile] = useState<MusicFile | null>(null);
   const windowRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -56,7 +57,9 @@ export default function ExternalLyricsPage() {
 
   // 计算颜色渐变
   const getColorGradient = (time: number, lineTime: number): string => {
-    const timeDiff = Math.abs(time - lineTime);
+    // 应用时间偏移
+    const adjustedTime = time - timeOffset;
+    const timeDiff = Math.abs(adjustedTime - lineTime);
 
     if (timeDiff < 0.5) {
       // 当前播放的歌词 - 亮色
@@ -65,6 +68,16 @@ export default function ExternalLyricsPage() {
       // 其他歌词 - 暗色
       return "text-gray-400";
     }
+  };
+
+  // 歌词前移 0.5 秒
+  const shiftLyricsForward = () => {
+    setTimeOffset((prev) => prev + 0.5);
+  };
+
+  // 歌词后移 0.5 秒
+  const shiftLyricsBackward = () => {
+    setTimeOffset((prev) => prev - 0.5);
   };
 
   // 切换播放/暂停
@@ -109,7 +122,6 @@ export default function ExternalLyricsPage() {
 
       // 解析LRC格式歌词
       const parsedLyrics = parseLrc(lrcData);
-      console.log(" fetchLyrics ~ parsedLyrics:", parsedLyrics);
       setLyrics(parsedLyrics);
 
       // 更新当前行索引
@@ -121,20 +133,22 @@ export default function ExternalLyricsPage() {
         // 重置播放器
         resetPlayer();
         // 延迟一小段时间后开始播放，确保状态更新完成
-        setTimeout(() => {
-          togglePlayPause();
-        }, 100);
+        // setTimeout(() => {
+        //   togglePlayPause();
+        // }, 100);
       }
     } catch (err) {
       console.error(err);
     }
   };
 
-  // 更新当前行索引
+  // 更新当前行索引，考虑时间偏移
   useEffect(() => {
-    const newIndex = getCurrentLineIndex(currentTime, lyrics);
+    // 应用时间偏移，计算调整后的时间
+    const adjustedTime = currentTime - timeOffset;
+    const newIndex = getCurrentLineIndex(adjustedTime, lyrics);
     setCurrentLineIndex(newIndex);
-  }, [currentTime, lyrics]);
+  }, [currentTime, lyrics, timeOffset]);
 
   // 组件卸载时清理定时器
   useEffect(() => {
@@ -151,7 +165,6 @@ export default function ExternalLyricsPage() {
   const init = async () => {
     // 获取当前播放的歌曲
     const currentSong = await invoke<string>("get_current_song");
-    console.log(" ExternalLyricsPage ~ currentSong:", currentSong);
     if (currentSong) {
       void fetchLyrics(currentSong);
     }
@@ -168,7 +181,6 @@ export default function ExternalLyricsPage() {
     let unlisten3: (() => void) | undefined;
 
     void listen<{ currentTime: number }>("music_progress", (event) => {
-      console.log(" useEffect ~ music_progress:");
       setCurrentTime(event.payload.currentTime);
     }).then((fn) => {
       unlisten1 = fn;
@@ -177,6 +189,7 @@ export default function ExternalLyricsPage() {
     void listen<{ musicFile: MusicFile }>("music_info", (event) => {
       const { name, path } = event.payload.musicFile;
       void fetchLyrics(path);
+      setTimeOffset(0);
     }).then((fn) => {
       unlisten2 = fn;
     });
@@ -232,7 +245,14 @@ export default function ExternalLyricsPage() {
         }`}
         data-tauri-drag-region
       >
-        <div className="text-xs opacity-70">桌面歌词</div>
+        <div className="text-xs opacity-70">
+          桌面歌词
+          {timeOffset > 0
+            ? `(前移 ${timeOffset.toFixed(1)}s)`
+            : timeOffset < 0
+            ? `(后移 ${Math.abs(timeOffset).toFixed(1)}s)`
+            : ""}
+        </div>
         <div className="flex space-x-2">
           <button
             onClick={togglePlayPause}
@@ -242,11 +262,18 @@ export default function ExternalLyricsPage() {
             {isPlaying ? "⏸️" : "▶️"}
           </button>
           <button
-            onClick={resetPlayer}
+            onClick={shiftLyricsBackward}
             className="text-xs opacity-70 hover:opacity-100"
-            title="重置"
+            title="歌词后移 0.5 秒"
           >
-            🔄
+            ⏪
+          </button>
+          <button
+            onClick={shiftLyricsForward}
+            className="text-xs opacity-70 hover:opacity-100"
+            title="歌词前移 0.5 秒"
+          >
+            ⏩
           </button>
           <button
             onClick={() => {

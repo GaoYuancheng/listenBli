@@ -270,10 +270,6 @@ async fn toggle_play_pause(app_handle: AppHandle) -> Result<(), String> {
   app_handle
     .emit_to("main", "toggle_play_pause", serde_json::json!({}))
     .expect("toggle_play_pause发送失败");
-  // 发送事件给主窗口，通知切换播放/暂停状态
-  // app_handle
-  //   .emit("toggle_play_pause", serde_json::json!({}))
-  //   .map_err(|e| e.to_string())?;
   Ok(())
 }
 
