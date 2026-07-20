@@ -108,6 +108,46 @@ fn scan_music_files(dirs: Vec<String>) -> Vec<serde_json::Value> {
   files
 }
 
+/// 将网易云 JSON 歌词格式转换为标准 LRC 格式
+fn convert_lyrics(content: &str) -> String {
+  let mut lines = Vec::new();
+  let mut is_netease = false;
+
+  for line in content.lines() {
+    let trimmed = line.trim();
+    if trimmed.is_empty() {
+      continue;
+    }
+
+    if trimmed.starts_with('{') {
+      if let Ok(val) = serde_json::from_str::<serde_json::Value>(trimmed) {
+        if let (Some(t), Some(c)) = (
+          val.get("t").and_then(|v| v.as_i64()),
+          val.get("c").and_then(|v| v.as_array()),
+        ) {
+          is_netease = true;
+          let mins = t / 60000;
+          let secs = (t % 60000) / 1000;
+          let cs = (t % 1000) / 10;
+          let text: String = c
+            .iter()
+            .filter_map(|chunk| chunk.get("tx").and_then(|tx| tx.as_str()))
+            .collect();
+          lines.push(format!("[{:02}:{:02}.{:02}]{}", mins, secs, cs, text));
+          continue;
+        }
+      }
+    }
+    lines.push(line.to_string());
+  }
+
+  if is_netease {
+    lines.join("\n")
+  } else {
+    content.to_string()
+  }
+}
+
 #[tauri::command]
 async fn get_lyrics(song_path: String) -> String {
   // 先检查是否已经是.lrc后缀
@@ -120,7 +160,13 @@ async fn get_lyrics(song_path: String) -> String {
   };
   println!("get_lyrics ~ lrc_path: {}", lrc_path.to_string_lossy());
 
-  fs::read_to_string(&lrc_path).unwrap_or_else(|_| "暂无歌词".to_string())
+  let content = fs::read_to_string(&lrc_path).unwrap_or_else(|_| "暂无歌词".to_string());
+
+  // 检测并转换网易云 JSON 歌词格式
+  let lyrics = convert_lyrics(&content);
+
+  // println!("get_lyrics ~ 歌词内容:\n{}", lyrics);
+  lyrics
 }
 
 #[tauri::command]
