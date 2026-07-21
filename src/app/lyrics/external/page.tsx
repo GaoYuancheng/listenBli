@@ -215,7 +215,7 @@ export default function ExternalLyricsPage() {
     }
     setIsHovered(true);
   };
-  console.log("currentTime", currentTime);
+  // console.log("currentTime", currentTime);
   // 处理鼠标离开
   const handleMouseLeave = () => {
     if (hoverTimerRef.current) {
@@ -250,8 +250,8 @@ export default function ExternalLyricsPage() {
           {timeOffset > 0
             ? `(前移 ${timeOffset.toFixed(1)}s)`
             : timeOffset < 0
-            ? `(后移 ${Math.abs(timeOffset).toFixed(1)}s)`
-            : ""}
+              ? `(后移 ${Math.abs(timeOffset).toFixed(1)}s)`
+              : ""}
         </div>
         <div className="flex space-x-2">
           <button

@@ -133,7 +133,7 @@ fn convert_lyrics(content: &str) -> String {
             .iter()
             .filter_map(|chunk| chunk.get("tx").and_then(|tx| tx.as_str()))
             .collect();
-          lines.push(format!("[{:02}:{:02}.{:02}]{}", mins, secs, cs, text));
+          lines.push(format!("[{:02}:{:02}.{:02}] {}", mins, secs, cs, text));
           continue;
         }
       }
@@ -165,7 +165,7 @@ async fn get_lyrics(song_path: String) -> String {
   // 检测并转换网易云 JSON 歌词格式
   let lyrics = convert_lyrics(&content);
 
-  // println!("get_lyrics ~ 歌词内容:\n{}", lyrics);
+  println!("get_lyrics ~ 歌词内容:\n{}", lyrics);
   lyrics
 }
 

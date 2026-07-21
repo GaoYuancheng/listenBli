@@ -11,7 +11,7 @@ export interface MusicFile {
 // 解析LRC格式歌词的函数
 export function parseLrc(lrc: string): LyricLine[] {
   const lines = lrc.split("\n");
-  const timeRegex = /\[(\d{2}):(\d{2})\.(\d{2})\]/;
+  const timeRegex = /\[(\d{2}):(\d{2})\.(\d{2,3})\]/;
 
   return lines
     .map((line) => {
@@ -20,7 +20,7 @@ export function parseLrc(lrc: string): LyricLine[] {
         const minutes = parseInt(match[1], 10);
         const seconds = parseInt(match[2], 10);
         const hundredths = parseInt(match[3], 10);
-        const time = minutes * 60 + seconds + hundredths / 100;
+        const time = minutes * 60 + seconds + hundredths / 1000;
         const text = line.replace(timeRegex, "").trim();
         return { time, text };
       }
